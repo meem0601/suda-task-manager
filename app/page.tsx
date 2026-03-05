@@ -575,13 +575,38 @@ export default function Home() {
               </div>
             </div>
 
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="px-5 py-2.5 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-all flex items-center gap-2 shadow-sm"
-            >
-              <span className="text-lg">+</span>
-              タスク追加
-            </button>
+            <div className="flex gap-3">
+              <button
+                onClick={async () => {
+                  if (!confirm('全タスクにAI提案を一括生成しますか？（AI提案がないタスクのみ対象）')) return;
+                  
+                  try {
+                    const response = await fetch('/api/ai-suggestion', {
+                      method: 'PUT'
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                      alert(`${data.count}個のタスクにAI提案を生成しました！`);
+                      fetchTasks();
+                    }
+                  } catch (error) {
+                    console.error('Error batch generating AI suggestions:', error);
+                    alert('AI提案の一括生成に失敗しました');
+                  }
+                }}
+                className="px-4 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-all flex items-center gap-2 shadow-sm"
+              >
+                <span className="text-lg">✨</span>
+                AI提案を一括生成
+              </button>
+              <button
+                onClick={() => setShowAddModal(true)}
+                className="px-5 py-2.5 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-all flex items-center gap-2 shadow-sm"
+              >
+                <span className="text-lg">+</span>
+                タスク追加
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -711,13 +736,40 @@ export default function Home() {
               </div>
 
               {/* AI提案 */}
-              {selectedTask.ai_suggestion && (
-                <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded">
-                  <p className="text-sm text-blue-900">
-                    <span className="font-semibold">💡 最初の一歩:</span> {selectedTask.ai_suggestion}
-                  </p>
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-sm font-semibold text-gray-700">AI提案</h4>
+                  <button
+                    onClick={async () => {
+                      try {
+                        const response = await fetch('/api/ai-suggestion', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ taskId: selectedTask.id })
+                        });
+                        const data = await response.json();
+                        if (data.success) {
+                          setSelectedTask({ ...selectedTask, ai_suggestion: data.ai_suggestion });
+                          fetchTasks();
+                        }
+                      } catch (error) {
+                        console.error('Error generating AI suggestion:', error);
+                        alert('AI提案の生成に失敗しました');
+                      }
+                    }}
+                    className="text-xs px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"
+                  >
+                    {selectedTask.ai_suggestion ? '再生成' : '✨ AI提案を生成'}
+                  </button>
                 </div>
-              )}
+                {selectedTask.ai_suggestion && (
+                  <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded">
+                    <p className="text-sm text-blue-900">
+                      <span className="font-semibold">💡 最初の一歩:</span> {selectedTask.ai_suggestion}
+                    </p>
+                  </div>
+                )}
+              </div>
 
               {/* サブタスク */}
               <div>
