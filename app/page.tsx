@@ -1,15 +1,19 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { supabase, Task } from '@/lib/supabase';
+import { supabase, Task, Subtask } from '@/lib/supabase';
 
 export default function Home() {
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [completedTasks, setCompletedTasks] = useState<Task[]>([]);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [subtasks, setSubtasks] = useState<Subtask[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | '個人' | '事業'>('all');
+  const [viewMode, setViewMode] = useState<'active' | 'completed'>('active');
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
   
   const [newTask, setNewTask] = useState({
     title: '',
@@ -21,7 +25,14 @@ export default function Home() {
 
   useEffect(() => {
     fetchTasks();
+    fetchCompletedTasks();
   }, [filter]);
+
+  useEffect(() => {
+    if (selectedTask) {
+      fetchSubtasks(selectedTask.id);
+    }
+  }, [selectedTask]);
 
   const fetchTasks = async () => {
     setLoading(true);
@@ -43,6 +54,40 @@ export default function Home() {
       setTasks(data || []);
     }
     setLoading(false);
+  };
+
+  const fetchCompletedTasks = async () => {
+    let query = supabase
+      .from('tasks')
+      .select('*')
+      .eq('status', '完了')
+      .order('completed_at', { ascending: false });
+
+    if (filter !== 'all') {
+      query = query.eq('category', filter);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Error fetching completed tasks:', error);
+    } else {
+      setCompletedTasks(data || []);
+    }
+  };
+
+  const fetchSubtasks = async (taskId: string) => {
+    const { data, error } = await supabase
+      .from('subtasks')
+      .select('*')
+      .eq('task_id', taskId)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching subtasks:', error);
+    } else {
+      setSubtasks(data || []);
+    }
   };
 
   const handleAddTask = async () => {
@@ -89,19 +134,24 @@ export default function Home() {
     } else {
       setSelectedTask(null);
       fetchTasks();
+      fetchCompletedTasks();
     }
   };
 
   const handleUpdateStatus = async (task: Task, newStatus: Task['status']) => {
     const { error } = await supabase
       .from('tasks')
-      .update({ status: newStatus })
+      .update({ 
+        status: newStatus,
+        completed_at: newStatus === '完了' ? new Date().toISOString() : null
+      })
       .eq('id', task.id);
 
     if (error) {
       console.error('Error updating status:', error);
     } else {
       fetchTasks();
+      fetchCompletedTasks();
     }
   };
 
@@ -115,7 +165,8 @@ export default function Home() {
         description: editingTask.description,
         category: editingTask.category,
         business_type: editingTask.business_type,
-        priority: editingTask.priority
+        priority: editingTask.priority,
+        status: editingTask.status
       })
       .eq('id', editingTask.id);
 
@@ -126,6 +177,46 @@ export default function Home() {
       setEditingTask(null);
       setSelectedTask(editingTask);
       fetchTasks();
+      fetchCompletedTasks();
+    }
+  };
+
+  const handleAddSubtask = async () => {
+    if (!selectedTask || !newSubtaskTitle.trim()) return;
+
+    const { error } = await supabase
+      .from('subtasks')
+      .insert([
+        {
+          task_id: selectedTask.id,
+          title: newSubtaskTitle,
+          completed: false
+        }
+      ]);
+
+    if (error) {
+      console.error('Error adding subtask:', error);
+    } else {
+      setNewSubtaskTitle('');
+      fetchSubtasks(selectedTask.id);
+    }
+  };
+
+  const handleToggleSubtask = async (subtask: Subtask) => {
+    const { error } = await supabase
+      .from('subtasks')
+      .update({ 
+        completed: !subtask.completed,
+        completed_at: !subtask.completed ? new Date().toISOString() : null
+      })
+      .eq('id', subtask.id);
+
+    if (error) {
+      console.error('Error toggling subtask:', error);
+    } else {
+      if (selectedTask) {
+        fetchSubtasks(selectedTask.id);
+      }
     }
   };
 
@@ -151,11 +242,12 @@ export default function Home() {
   };
 
   // グループ化: 優先度順
+  const displayTasks = viewMode === 'active' ? tasks : completedTasks;
   const groupedTasks = {
-    '🔥 今すぐやる': tasks.filter(t => t.priority === '今すぐやる'),
-    '⚡ 今週やる': tasks.filter(t => t.priority === '今週やる'),
-    '📅 今月やる': tasks.filter(t => t.priority === '今月やる'),
-    '📋 その他': tasks.filter(t => !['今すぐやる', '今週やる', '今月やる'].includes(t.priority || ''))
+    '🔥 今すぐやる': displayTasks.filter(t => t.priority === '今すぐやる'),
+    '⚡ 今週やる': displayTasks.filter(t => t.priority === '今週やる'),
+    '📅 今月やる': displayTasks.filter(t => t.priority === '今月やる'),
+    '📋 その他': displayTasks.filter(t => !['今すぐやる', '今週やる', '今月やる'].includes(t.priority || ''))
   };
 
   return (
@@ -168,10 +260,32 @@ export default function Home() {
               <h1 className="text-2xl font-bold text-gray-900">📋 須田様専用タスク管理</h1>
               <div className="flex gap-2">
                 <button
+                  onClick={() => setViewMode('active')}
+                  className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
+                    viewMode === 'active'
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  進行中 ({tasks.length})
+                </button>
+                <button
+                  onClick={() => setViewMode('completed')}
+                  className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
+                    viewMode === 'completed'
+                      ? 'bg-green-600 text-white'
+                      : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  完了済み ({completedTasks.length})
+                </button>
+              </div>
+              <div className="flex gap-2">
+                <button
                   onClick={() => setFilter('all')}
                   className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
                     filter === 'all'
-                      ? 'bg-indigo-600 text-white'
+                      ? 'bg-gray-700 text-white'
                       : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-50'
                   }`}
                 >
@@ -216,10 +330,11 @@ export default function Home() {
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600 mx-auto"></div>
           </div>
-        ) : tasks.length === 0 ? (
+        ) : displayTasks.length === 0 ? (
           <div className="bg-white rounded-lg shadow-sm p-12 text-center">
-            <p className="text-gray-500">タスクがありません</p>
-            <p className="text-gray-400 text-sm mt-2">「タスク追加」ボタンから追加してください</p>
+            <p className="text-gray-500">
+              {viewMode === 'active' ? 'タスクがありません' : '完了したタスクはありません'}
+            </p>
           </div>
         ) : (
           <div className="space-y-6">
@@ -295,16 +410,18 @@ export default function Home() {
 
                         {/* 操作 */}
                         <div className="col-span-1 flex items-center justify-end gap-2">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleCompleteTask(task);
-                            }}
-                            className="text-green-600 hover:text-green-700 text-lg"
-                            title="完了"
-                          >
-                            ✓
-                          </button>
+                          {viewMode === 'active' && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleCompleteTask(task);
+                              }}
+                              className="text-green-600 hover:text-green-700 text-lg"
+                              title="完了"
+                            >
+                              ✓
+                            </button>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -320,7 +437,7 @@ export default function Home() {
       {selectedTask && (
         <>
           <div 
-            className="fixed inset-0 bg-black bg-opacity-30 z-40"
+            className="fixed inset-0 bg-black bg-opacity-10 z-40"
             onClick={() => setSelectedTask(null)}
           />
           <div className="fixed right-0 top-0 bottom-0 w-[500px] bg-white shadow-2xl z-50 overflow-y-auto">
@@ -354,9 +471,40 @@ export default function Home() {
                       value={editingTask.description || ''}
                       onChange={(e) => setEditingTask({ ...editingTask, description: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                      rows={6}
+                      rows={4}
                     />
                   </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">カテゴリ</label>
+                    <select
+                      value={editingTask.category}
+                      onChange={(e) => setEditingTask({ ...editingTask, category: e.target.value as Task['category'] })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    >
+                      <option value="個人">個人</option>
+                      <option value="事業">事業</option>
+                    </select>
+                  </div>
+
+                  {editingTask.category === '事業' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">事業種別</label>
+                      <select
+                        value={editingTask.business_type || ''}
+                        onChange={(e) => setEditingTask({ ...editingTask, business_type: e.target.value as Task['business_type'] })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                      >
+                        <option value="">選択してください</option>
+                        <option value="不動産">不動産</option>
+                        <option value="人材">人材</option>
+                        <option value="経済圏">経済圏</option>
+                        <option value="結婚相談所">結婚相談所</option>
+                        <option value="コーポレート">コーポレート</option>
+                        <option value="その他">その他</option>
+                      </select>
+                    </div>
+                  )}
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">優先度</label>
@@ -372,6 +520,19 @@ export default function Home() {
                       <option value="高">高</option>
                       <option value="中">中</option>
                       <option value="低">低</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">ステータス</label>
+                    <select
+                      value={editingTask.status}
+                      onChange={(e) => setEditingTask({ ...editingTask, status: e.target.value as Task['status'] })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    >
+                      <option value="未着手">未着手</option>
+                      <option value="進行中">進行中</option>
+                      <option value="完了">完了</option>
                     </select>
                   </div>
 
@@ -427,13 +588,52 @@ export default function Home() {
                   {selectedTask.ai_suggestion && (
                     <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded">
                       <p className="text-sm text-blue-900">
-                        <span className="font-semibold">💡 AI提案:</span> {selectedTask.ai_suggestion}
+                        <span className="font-semibold">💡 最初の一歩:</span> {selectedTask.ai_suggestion}
                       </p>
                     </div>
                   )}
 
+                  {/* サブタスク */}
+                  <div>
+                    <h4 className="text-sm font-semibold text-gray-700 mb-3">サブタスク</h4>
+                    <div className="space-y-2 mb-3">
+                      {subtasks.map((subtask) => (
+                        <div key={subtask.id} className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded">
+                          <input
+                            type="checkbox"
+                            checked={subtask.completed}
+                            onChange={() => handleToggleSubtask(subtask)}
+                            className="w-4 h-4 text-indigo-600 rounded"
+                          />
+                          <span className={`flex-1 text-sm ${subtask.completed ? 'line-through text-gray-400' : 'text-gray-700'}`}>
+                            {subtask.title}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={newSubtaskTitle}
+                        onChange={(e) => setNewSubtaskTitle(e.target.value)}
+                        onKeyPress={(e) => e.key === 'Enter' && handleAddSubtask()}
+                        placeholder="サブタスクを追加..."
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                      />
+                      <button
+                        onClick={handleAddSubtask}
+                        className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm"
+                      >
+                        追加
+                      </button>
+                    </div>
+                  </div>
+
                   <div className="text-xs text-gray-500 bg-gray-50 p-3 rounded">
                     作成日: {new Date(selectedTask.created_at).toLocaleString('ja-JP')}
+                    {selectedTask.completed_at && (
+                      <><br/>完了日: {new Date(selectedTask.completed_at).toLocaleString('ja-JP')}</>
+                    )}
                   </div>
 
                   <div className="flex gap-2 pt-4 border-t border-gray-200">
@@ -443,12 +643,14 @@ export default function Home() {
                     >
                       ✏️ 編集
                     </button>
-                    <button
-                      onClick={() => handleCompleteTask(selectedTask)}
-                      className="flex-1 px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium"
-                    >
-                      ✓ 完了
-                    </button>
+                    {viewMode === 'active' && (
+                      <button
+                        onClick={() => handleCompleteTask(selectedTask)}
+                        className="flex-1 px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium"
+                      >
+                        ✓ 完了
+                      </button>
+                    )}
                   </div>
                 </div>
               )}

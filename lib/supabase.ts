@@ -20,3 +20,13 @@ export interface Task {
   updated_at: string;
   completed_at?: string;
 }
+
+// サブタスクの型定義
+export interface Subtask {
+  id: string;
+  task_id: string;
+  title: string;
+  completed: boolean;
+  created_at: string;
+  completed_at?: string;
+}
