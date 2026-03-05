@@ -16,6 +16,7 @@ export interface Task {
   ai_priority_score?: number;
   ai_suggestion?: string;
   status: '未着手' | '進行中' | '完了';
+  due_date?: string;
   created_at: string;
   updated_at: string;
   completed_at?: string;
