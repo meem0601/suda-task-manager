@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 
 export function useMediaQuery(query: string): boolean {
-  const [matches, setMatches] = useState(false);
+  // モバイルファースト: 初期値をtrueにして、クライアントで正確な値に更新
+  const [matches, setMatches] = useState(true);
 
   useEffect(() => {
     const media = window.matchMedia(query);
