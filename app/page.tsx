@@ -2,15 +2,16 @@
 
 import { useEffect, useState } from 'react';
 import { supabase, Task, Subtask } from '@/lib/supabase';
+import MondayTable from './components/MondayTable';
 
-type ViewMode = 'dashboard' | 'board' | 'list';
+type ViewMode = 'dashboard' | 'board' | 'table';
 
 export default function Home() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [subtasks, setSubtasks] = useState<Subtask[]>([]);
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<ViewMode>('dashboard');
+  const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [filter, setFilter] = useState<'all' | '個人' | '事業'>('all');
   const [showAddModal, setShowAddModal] = useState(false);
   const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
@@ -539,14 +540,14 @@ export default function Home() {
                   📌 ボード
                 </button>
                 <button
-                  onClick={() => setViewMode('list')}
+                  onClick={() => setViewMode('table')}
                   className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                    viewMode === 'list'
+                    viewMode === 'table'
                       ? 'bg-white text-gray-900 shadow-sm'
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
-                  📝 リスト
+                  📋 テーブル
                 </button>
               </div>
 
@@ -625,7 +626,13 @@ export default function Home() {
           <>
             {viewMode === 'dashboard' && renderDashboard()}
             {viewMode === 'board' && renderBoard()}
-            {viewMode === 'list' && renderList()}
+            {viewMode === 'table' && (
+              <MondayTable
+                tasks={tasks}
+                onUpdateTask={handleUpdateField}
+                onSelectTask={setSelectedTask}
+              />
+            )}
           </>
         )}
       </div>
