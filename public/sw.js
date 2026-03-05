@@ -1,4 +1,4 @@
-const CACHE_NAME = 'suda-task-v1';
+const CACHE_NAME = 'suda-task-v2-mobile-20260305';
 const urlsToCache = [
   '/',
   '/manifest.json',
