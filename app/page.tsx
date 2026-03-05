@@ -197,10 +197,14 @@ export default function Home() {
     }
   };
 
-  // 期限チェック
+  // 期限チェック（当日は期限切れにしない）
   const isOverdue = (task: Task) => {
     if (!task.due_date || task.status === '完了') return false;
-    return new Date(task.due_date) < new Date();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // 今日の0:00
+    const dueDate = new Date(task.due_date);
+    dueDate.setHours(0, 0, 0, 0); // 期日の0:00
+    return dueDate < today; // 期日 < 今日 なら期限切れ
   };
 
   const isToday = (task: Task) => {
