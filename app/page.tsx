@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { supabase, Task, Subtask } from '@/lib/supabase';
 import NotificationPrompt from './components/NotificationPrompt';
+import { validateTask, validateSubtaskTitle } from '@/lib/validation';
 
 export default function Home() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -68,8 +69,10 @@ export default function Home() {
   };
 
   const handleAddTask = async () => {
-    if (!newTask.title.trim()) {
-      alert('タイトルを入力してください');
+    // バリデーション
+    const validation = validateTask(newTask);
+    if (!validation.valid) {
+      alert(validation.error);
       return;
     }
 
@@ -123,7 +126,14 @@ export default function Home() {
   };
 
   const handleAddSubtask = async () => {
-    if (!selectedTask || !newSubtaskTitle.trim()) return;
+    if (!selectedTask) return;
+
+    // バリデーション
+    const validation = validateSubtaskTitle(newSubtaskTitle);
+    if (!validation.valid) {
+      alert(validation.error);
+      return;
+    }
 
     const { error } = await supabase
       .from('subtasks')
@@ -155,6 +165,58 @@ export default function Home() {
 
     if (error) {
       console.error('Error toggling subtask:', error);
+    } else {
+      if (selectedTask) {
+        fetchSubtasks(selectedTask.id);
+      }
+    }
+  };
+
+  const handleDeleteTask = async (taskId: string) => {
+    if (!confirm('このタスクを削除しますか？サブタスクもすべて削除されます。')) {
+      return;
+    }
+
+    // サブタスクを先に削除
+    const { error: subtaskError } = await supabase
+      .from('subtasks')
+      .delete()
+      .eq('task_id', taskId);
+
+    if (subtaskError) {
+      console.error('Error deleting subtasks:', subtaskError);
+      alert('サブタスクの削除に失敗しました');
+      return;
+    }
+
+    // タスクを削除
+    const { error } = await supabase
+      .from('tasks')
+      .delete()
+      .eq('id', taskId);
+
+    if (error) {
+      console.error('Error deleting task:', error);
+      alert('タスクの削除に失敗しました');
+    } else {
+      setSelectedTask(null);
+      fetchTasks();
+    }
+  };
+
+  const handleDeleteSubtask = async (subtaskId: string) => {
+    if (!confirm('このサブタスクを削除しますか？')) {
+      return;
+    }
+
+    const { error } = await supabase
+      .from('subtasks')
+      .delete()
+      .eq('id', subtaskId);
+
+    if (error) {
+      console.error('Error deleting subtask:', error);
+      alert('サブタスクの削除に失敗しました');
     } else {
       if (selectedTask) {
         fetchSubtasks(selectedTask.id);
@@ -552,16 +614,25 @@ export default function Home() {
               </label>
               <div className="space-y-2 mb-3">
                 {subtasks.map((subtask) => (
-                  <label key={subtask.id} className="interactive-label">
-                    <input
-                      type="checkbox"
-                      checked={subtask.completed}
-                      onChange={() => handleToggleSubtask(subtask)}
-                    />
-                    <span className={`flex-1 text-sm ${subtask.completed ? 'line-through text-gray-400' : 'text-gray-700'}`}>
-                      {subtask.title}
-                    </span>
-                  </label>
+                  <div key={subtask.id} className="flex items-center gap-2">
+                    <label className="interactive-label flex-1">
+                      <input
+                        type="checkbox"
+                        checked={subtask.completed}
+                        onChange={() => handleToggleSubtask(subtask)}
+                      />
+                      <span className={`flex-1 text-sm ${subtask.completed ? 'line-through text-gray-400' : 'text-gray-700'}`}>
+                        {subtask.title}
+                      </span>
+                    </label>
+                    <button
+                      onClick={() => handleDeleteSubtask(subtask.id)}
+                      className="text-red-500 hover:text-red-700 px-2 py-1 text-sm"
+                      aria-label="サブタスクを削除"
+                    >
+                      🗑️
+                    </button>
+                  </div>
                 ))}
               </div>
               <div className="flex gap-2">
@@ -588,6 +659,17 @@ export default function Home() {
               {selectedTask.completed_at && (
                 <><br/>完了日: {new Date(selectedTask.completed_at).toLocaleString('ja-JP')}</>
               )}
+            </div>
+
+            {/* タスク削除ボタン */}
+            <div className="border-t pt-4">
+              <button
+                onClick={() => handleDeleteTask(selectedTask.id)}
+                className="w-full px-4 py-3 bg-red-50 text-red-600 rounded-lg font-medium hover:bg-red-100 active:bg-red-200 transition-all duration-150 active:scale-95 flex items-center justify-center gap-2"
+              >
+                <span>🗑️</span>
+                <span>このタスクを削除</span>
+              </button>
             </div>
           </div>
         </div>
