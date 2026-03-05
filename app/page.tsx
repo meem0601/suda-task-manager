@@ -12,7 +12,6 @@ export default function Home() {
   const [filter, setFilter] = useState<'all' | '個人' | '事業'>('all');
   const [viewMode, setViewMode] = useState<'active' | 'completed'>('active');
   const [showAddModal, setShowAddModal] = useState(false);
-  const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
   
   const [newTask, setNewTask] = useState({
@@ -138,46 +137,26 @@ export default function Home() {
     }
   };
 
-  const handleUpdateStatus = async (task: Task, newStatus: Task['status']) => {
-    const { error } = await supabase
-      .from('tasks')
-      .update({ 
-        status: newStatus,
-        completed_at: newStatus === '完了' ? new Date().toISOString() : null
-      })
-      .eq('id', task.id);
-
-    if (error) {
-      console.error('Error updating status:', error);
-    } else {
-      fetchTasks();
-      fetchCompletedTasks();
+  const handleUpdateField = async (taskId: string, field: string, value: any) => {
+    const updateData: any = { [field]: value };
+    if (field === 'status' && value === '完了') {
+      updateData.completed_at = new Date().toISOString();
     }
-  };
-
-  const handleUpdateTask = async () => {
-    if (!editingTask) return;
 
     const { error } = await supabase
       .from('tasks')
-      .update({
-        title: editingTask.title,
-        description: editingTask.description,
-        category: editingTask.category,
-        business_type: editingTask.business_type,
-        priority: editingTask.priority,
-        status: editingTask.status
-      })
-      .eq('id', editingTask.id);
+      .update(updateData)
+      .eq('id', taskId);
 
     if (error) {
-      console.error('Error updating task:', error);
-      alert('タスクの更新に失敗しました');
+      console.error('Error updating field:', error);
     } else {
-      setEditingTask(null);
-      setSelectedTask(editingTask);
       fetchTasks();
       fetchCompletedTasks();
+      if (selectedTask?.id === taskId) {
+        const updatedTask = { ...selectedTask, [field]: value };
+        setSelectedTask(updatedTask);
+      }
     }
   };
 
@@ -196,6 +175,7 @@ export default function Home() {
 
     if (error) {
       console.error('Error adding subtask:', error);
+      alert('サブタスクの追加に失敗しました');
     } else {
       setNewSubtaskTitle('');
       fetchSubtasks(selectedTask.id);
@@ -349,11 +329,11 @@ export default function Home() {
                   
                   {/* テーブルヘッダー */}
                   <div className="grid grid-cols-12 gap-4 px-6 py-3 bg-gray-50 border-b border-gray-200 text-xs font-medium text-gray-500 uppercase">
-                    <div className="col-span-5">タスク名</div>
+                    <div className="col-span-4">タスク名</div>
                     <div className="col-span-2">カテゴリ</div>
                     <div className="col-span-2">優先度</div>
                     <div className="col-span-2">ステータス</div>
-                    <div className="col-span-1">操作</div>
+                    <div className="col-span-2">操作</div>
                   </div>
 
                   {/* タスク一覧 */}
@@ -361,21 +341,29 @@ export default function Home() {
                     {groupTasks.map((task) => (
                       <div
                         key={task.id}
-                        className="grid grid-cols-12 gap-4 px-6 py-4 hover:bg-gray-50 transition-colors cursor-pointer"
-                        onClick={() => setSelectedTask(task)}
+                        className="grid grid-cols-12 gap-4 px-6 py-4 hover:bg-gray-50 transition-colors"
                       >
                         {/* タスク名 */}
-                        <div className="col-span-5 flex items-center">
+                        <div 
+                          className="col-span-4 flex items-center cursor-pointer"
+                          onClick={() => setSelectedTask(task)}
+                        >
                           <span className="font-medium text-gray-900 truncate">{task.title}</span>
                         </div>
 
                         {/* カテゴリ */}
                         <div className="col-span-2 flex items-center gap-2">
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                            task.category === '個人' ? 'bg-green-100 text-green-700' : 'bg-purple-100 text-purple-700'
-                          }`}>
-                            {task.category}
-                          </span>
+                          <select
+                            value={task.category}
+                            onChange={(e) => handleUpdateField(task.id, 'category', e.target.value)}
+                            onClick={(e) => e.stopPropagation()}
+                            className={`px-3 py-1 rounded-full text-xs font-medium cursor-pointer border-0 ${
+                              task.category === '個人' ? 'bg-green-100 text-green-700' : 'bg-purple-100 text-purple-700'
+                            }`}
+                          >
+                            <option value="個人">個人</option>
+                            <option value="事業">事業</option>
+                          </select>
                           {task.business_type && (
                             <span className="px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-600">
                               {task.business_type}
@@ -385,21 +373,28 @@ export default function Home() {
 
                         {/* 優先度 */}
                         <div className="col-span-2 flex items-center">
-                          {task.priority && (
-                            <span className={`px-3 py-1 rounded-md text-xs font-medium ${priorityColor(task.priority)}`}>
-                              {task.priority}
-                            </span>
-                          )}
+                          <select
+                            value={task.priority || ''}
+                            onChange={(e) => handleUpdateField(task.id, 'priority', e.target.value || undefined)}
+                            onClick={(e) => e.stopPropagation()}
+                            className={`px-3 py-1 rounded-md text-xs font-medium cursor-pointer border-0 ${priorityColor(task.priority)}`}
+                          >
+                            <option value="">なし</option>
+                            <option value="今すぐやる">今すぐやる</option>
+                            <option value="今週やる">今週やる</option>
+                            <option value="今月やる">今月やる</option>
+                            <option value="高">高</option>
+                            <option value="中">中</option>
+                            <option value="低">低</option>
+                          </select>
                         </div>
 
                         {/* ステータス */}
                         <div className="col-span-2 flex items-center">
                           <select
                             value={task.status}
-                            onChange={(e) => {
-                              e.stopPropagation();
-                              handleUpdateStatus(task, e.target.value as Task['status']);
-                            }}
+                            onChange={(e) => handleUpdateField(task.id, 'status', e.target.value)}
+                            onClick={(e) => e.stopPropagation()}
                             className={`px-3 py-1 rounded-md text-xs font-medium border ${statusColor(task.status)} cursor-pointer`}
                           >
                             <option value="未着手">未着手</option>
@@ -409,7 +404,17 @@ export default function Home() {
                         </div>
 
                         {/* 操作 */}
-                        <div className="col-span-1 flex items-center justify-end gap-2">
+                        <div className="col-span-2 flex items-center gap-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedTask(task);
+                            }}
+                            className="text-gray-600 hover:text-gray-700 text-sm"
+                            title="詳細"
+                          >
+                            📋 詳細
+                          </button>
                           {viewMode === 'active' && (
                             <button
                               onClick={(e) => {
@@ -435,228 +440,161 @@ export default function Home() {
 
       {/* 詳細パネル（右スライドイン） */}
       {selectedTask && (
-        <>
-          <div 
-            className="fixed inset-0 bg-black bg-opacity-10 z-40"
-            onClick={() => setSelectedTask(null)}
-          />
-          <div className="fixed right-0 top-0 bottom-0 w-[500px] bg-white shadow-2xl z-50 overflow-y-auto">
-            <div className="p-6">
-              <div className="flex items-start justify-between mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">タスク詳細</h2>
-                <button
-                  onClick={() => setSelectedTask(null)}
-                  className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
-                >
-                  ×
-                </button>
+        <div className="fixed right-0 top-0 bottom-0 w-[500px] bg-white shadow-2xl z-50 overflow-y-auto">
+          <div className="p-6">
+            <div className="flex items-start justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">タスク詳細</h2>
+              <button
+                onClick={() => setSelectedTask(null)}
+                className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              {/* タイトル */}
+              <div>
+                <input
+                  type="text"
+                  value={selectedTask.title}
+                  onChange={(e) => setSelectedTask({ ...selectedTask, title: e.target.value })}
+                  onBlur={() => handleUpdateField(selectedTask.id, 'title', selectedTask.title)}
+                  className="text-xl font-bold text-gray-900 mb-4 w-full border-0 border-b-2 border-transparent hover:border-gray-300 focus:border-indigo-500 outline-none"
+                />
+                
+                <div className="flex flex-wrap gap-2">
+                  <select
+                    value={selectedTask.category}
+                    onChange={(e) => handleUpdateField(selectedTask.id, 'category', e.target.value)}
+                    className={`px-3 py-1 rounded-full text-sm font-medium cursor-pointer ${
+                      selectedTask.category === '個人' ? 'bg-green-100 text-green-700' : 'bg-purple-100 text-purple-700'
+                    }`}
+                  >
+                    <option value="個人">個人</option>
+                    <option value="事業">事業</option>
+                  </select>
+
+                  {selectedTask.category === '事業' && (
+                    <select
+                      value={selectedTask.business_type || ''}
+                      onChange={(e) => handleUpdateField(selectedTask.id, 'business_type', e.target.value || undefined)}
+                      className="px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-700 cursor-pointer"
+                    >
+                      <option value="">事業種別</option>
+                      <option value="不動産">不動産</option>
+                      <option value="人材">人材</option>
+                      <option value="経済圏">経済圏</option>
+                      <option value="結婚相談所">結婚相談所</option>
+                      <option value="コーポレート">コーポレート</option>
+                      <option value="その他">その他</option>
+                    </select>
+                  )}
+
+                  <select
+                    value={selectedTask.priority || ''}
+                    onChange={(e) => handleUpdateField(selectedTask.id, 'priority', e.target.value || undefined)}
+                    className={`px-3 py-1 rounded-md text-sm font-medium cursor-pointer ${priorityColor(selectedTask.priority)}`}
+                  >
+                    <option value="">優先度なし</option>
+                    <option value="今すぐやる">今すぐやる</option>
+                    <option value="今週やる">今週やる</option>
+                    <option value="今月やる">今月やる</option>
+                    <option value="高">高</option>
+                    <option value="中">中</option>
+                    <option value="低">低</option>
+                  </select>
+
+                  <select
+                    value={selectedTask.status}
+                    onChange={(e) => handleUpdateField(selectedTask.id, 'status', e.target.value)}
+                    className={`px-3 py-1 rounded-md text-sm font-medium border ${statusColor(selectedTask.status)} cursor-pointer`}
+                  >
+                    <option value="未着手">未着手</option>
+                    <option value="進行中">進行中</option>
+                    <option value="完了">完了</option>
+                  </select>
+                </div>
               </div>
 
-              {editingTask?.id === selectedTask.id ? (
-                // 編集モード
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">タイトル</label>
-                    <input
-                      type="text"
-                      value={editingTask.title}
-                      onChange={(e) => setEditingTask({ ...editingTask, title: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                    />
-                  </div>
+              {/* 説明 */}
+              <div>
+                <h4 className="text-sm font-semibold text-gray-700 mb-2">説明</h4>
+                <textarea
+                  value={selectedTask.description || ''}
+                  onChange={(e) => setSelectedTask({ ...selectedTask, description: e.target.value })}
+                  onBlur={() => handleUpdateField(selectedTask.id, 'description', selectedTask.description)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-600 bg-gray-50"
+                  rows={4}
+                  placeholder="詳細な説明を入力..."
+                />
+              </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">説明</label>
-                    <textarea
-                      value={editingTask.description || ''}
-                      onChange={(e) => setEditingTask({ ...editingTask, description: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                      rows={4}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">カテゴリ</label>
-                    <select
-                      value={editingTask.category}
-                      onChange={(e) => setEditingTask({ ...editingTask, category: e.target.value as Task['category'] })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                    >
-                      <option value="個人">個人</option>
-                      <option value="事業">事業</option>
-                    </select>
-                  </div>
-
-                  {editingTask.category === '事業' && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">事業種別</label>
-                      <select
-                        value={editingTask.business_type || ''}
-                        onChange={(e) => setEditingTask({ ...editingTask, business_type: e.target.value as Task['business_type'] })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                      >
-                        <option value="">選択してください</option>
-                        <option value="不動産">不動産</option>
-                        <option value="人材">人材</option>
-                        <option value="経済圏">経済圏</option>
-                        <option value="結婚相談所">結婚相談所</option>
-                        <option value="コーポレート">コーポレート</option>
-                        <option value="その他">その他</option>
-                      </select>
-                    </div>
-                  )}
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">優先度</label>
-                    <select
-                      value={editingTask.priority || ''}
-                      onChange={(e) => setEditingTask({ ...editingTask, priority: e.target.value as Task['priority'] })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                    >
-                      <option value="">選択してください</option>
-                      <option value="今すぐやる">今すぐやる</option>
-                      <option value="今週やる">今週やる</option>
-                      <option value="今月やる">今月やる</option>
-                      <option value="高">高</option>
-                      <option value="中">中</option>
-                      <option value="低">低</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">ステータス</label>
-                    <select
-                      value={editingTask.status}
-                      onChange={(e) => setEditingTask({ ...editingTask, status: e.target.value as Task['status'] })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                    >
-                      <option value="未着手">未着手</option>
-                      <option value="進行中">進行中</option>
-                      <option value="完了">完了</option>
-                    </select>
-                  </div>
-
-                  <div className="flex gap-2 pt-4">
-                    <button
-                      onClick={() => setEditingTask(null)}
-                      className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
-                    >
-                      キャンセル
-                    </button>
-                    <button
-                      onClick={handleUpdateTask}
-                      className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
-                    >
-                      保存
-                    </button>
-                  </div>
+              {/* AI提案 */}
+              {selectedTask.ai_suggestion && (
+                <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded">
+                  <p className="text-sm text-blue-900">
+                    <span className="font-semibold">💡 最初の一歩:</span> {selectedTask.ai_suggestion}
+                  </p>
                 </div>
-              ) : (
-                // 表示モード
-                <div className="space-y-6">
-                  <div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-4">{selectedTask.title}</h3>
-                    <div className="flex flex-wrap gap-2">
-                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                        selectedTask.category === '個人' ? 'bg-green-100 text-green-700' : 'bg-purple-100 text-purple-700'
-                      }`}>
-                        {selectedTask.category}
-                      </span>
-                      {selectedTask.business_type && (
-                        <span className="px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-700">
-                          {selectedTask.business_type}
-                        </span>
-                      )}
-                      {selectedTask.priority && (
-                        <span className={`px-3 py-1 rounded-md text-sm font-medium ${priorityColor(selectedTask.priority)}`}>
-                          {selectedTask.priority}
-                        </span>
-                      )}
-                      <span className={`px-3 py-1 rounded-md text-sm font-medium border ${statusColor(selectedTask.status)}`}>
-                        {selectedTask.status}
-                      </span>
-                    </div>
-                  </div>
+              )}
 
-                  {selectedTask.description && (
-                    <div>
-                      <h4 className="text-sm font-semibold text-gray-700 mb-2">説明</h4>
-                      <p className="text-gray-600 whitespace-pre-wrap bg-gray-50 p-4 rounded-lg">{selectedTask.description}</p>
-                    </div>
-                  )}
-
-                  {selectedTask.ai_suggestion && (
-                    <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded">
-                      <p className="text-sm text-blue-900">
-                        <span className="font-semibold">💡 最初の一歩:</span> {selectedTask.ai_suggestion}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* サブタスク */}
-                  <div>
-                    <h4 className="text-sm font-semibold text-gray-700 mb-3">サブタスク</h4>
-                    <div className="space-y-2 mb-3">
-                      {subtasks.map((subtask) => (
-                        <div key={subtask.id} className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded">
-                          <input
-                            type="checkbox"
-                            checked={subtask.completed}
-                            onChange={() => handleToggleSubtask(subtask)}
-                            className="w-4 h-4 text-indigo-600 rounded"
-                          />
-                          <span className={`flex-1 text-sm ${subtask.completed ? 'line-through text-gray-400' : 'text-gray-700'}`}>
-                            {subtask.title}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="flex gap-2">
+              {/* サブタスク */}
+              <div>
+                <h4 className="text-sm font-semibold text-gray-700 mb-3">サブタスク ({subtasks.length})</h4>
+                <div className="space-y-2 mb-3">
+                  {subtasks.map((subtask) => (
+                    <label key={subtask.id} className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded cursor-pointer">
                       <input
-                        type="text"
-                        value={newSubtaskTitle}
-                        onChange={(e) => setNewSubtaskTitle(e.target.value)}
-                        onKeyPress={(e) => e.key === 'Enter' && handleAddSubtask()}
-                        placeholder="サブタスクを追加..."
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                        type="checkbox"
+                        checked={subtask.completed}
+                        onChange={() => handleToggleSubtask(subtask)}
+                        className="w-5 h-5 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
                       />
-                      <button
-                        onClick={handleAddSubtask}
-                        className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm"
-                      >
-                        追加
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="text-xs text-gray-500 bg-gray-50 p-3 rounded">
-                    作成日: {new Date(selectedTask.created_at).toLocaleString('ja-JP')}
-                    {selectedTask.completed_at && (
-                      <><br/>完了日: {new Date(selectedTask.completed_at).toLocaleString('ja-JP')}</>
-                    )}
-                  </div>
-
-                  <div className="flex gap-2 pt-4 border-t border-gray-200">
-                    <button
-                      onClick={() => setEditingTask(selectedTask)}
-                      className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium"
-                    >
-                      ✏️ 編集
-                    </button>
-                    {viewMode === 'active' && (
-                      <button
-                        onClick={() => handleCompleteTask(selectedTask)}
-                        className="flex-1 px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium"
-                      >
-                        ✓ 完了
-                      </button>
-                    )}
-                  </div>
+                      <span className={`flex-1 text-sm ${subtask.completed ? 'line-through text-gray-400' : 'text-gray-700'}`}>
+                        {subtask.title}
+                      </span>
+                    </label>
+                  ))}
                 </div>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newSubtaskTitle}
+                    onChange={(e) => setNewSubtaskTitle(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleAddSubtask()}
+                    placeholder="サブタスクを追加..."
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  />
+                  <button
+                    onClick={handleAddSubtask}
+                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium"
+                  >
+                    追加
+                  </button>
+                </div>
+              </div>
+
+              {/* 作成日 */}
+              <div className="text-xs text-gray-500 bg-gray-50 p-3 rounded">
+                作成日: {new Date(selectedTask.created_at).toLocaleString('ja-JP')}
+                {selectedTask.completed_at && (
+                  <><br/>完了日: {new Date(selectedTask.completed_at).toLocaleString('ja-JP')}</>
+                )}
+              </div>
+
+              {/* 完了ボタン */}
+              {viewMode === 'active' && selectedTask.status !== '完了' && (
+                <button
+                  onClick={() => handleCompleteTask(selectedTask)}
+                  className="w-full px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium"
+                >
+                  ✓ 完了にする
+                </button>
               )}
             </div>
           </div>
-        </>
+        </div>
       )}
 
       {/* タスク追加モーダル */}
