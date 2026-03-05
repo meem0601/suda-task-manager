@@ -1,0 +1,258 @@
+/* 須田タスク管理アプリ - 改善版CSS */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* カラーシステム */
+  :root {
+    /* ブランドカラー */
+    --primary: #6366F1;        /* Indigo-500 */
+    --primary-hover: #4F46E5;  /* Indigo-600 */
+    --primary-active: #4338CA; /* Indigo-700 */
+    
+    /* セマンティックカラー */
+    --success: #10B981;        /* Emerald-500 */
+    --warning: #F59E0B;        /* Amber-500 */
+    --danger: #EF4444;         /* Red-500 */
+    --info: #3B82F6;           /* Blue-500 */
+    
+    /* 背景・サーフェス */
+    --background: #F8FAFC;     /* Slate-50 */
+    --surface: #FFFFFF;
+    --surface-hover: #F1F5F9;  /* Slate-100 */
+    
+    /* ボーダー */
+    --border: #E2E8F0;         /* Slate-200 */
+    --border-focus: #CBD5E1;   /* Slate-300 */
+  }
+}
+
+@layer utilities {
+  /* アニメーション定義 */
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes slideUp {
+    from { 
+      transform: translateY(100%); 
+      opacity: 0.8;
+    }
+    to { 
+      transform: translateY(0); 
+      opacity: 1;
+    }
+  }
+
+  @keyframes scaleIn {
+    from { 
+      transform: scale(0.95); 
+      opacity: 0;
+    }
+    to { 
+      transform: scale(1); 
+      opacity: 1;
+    }
+  }
+
+  /* アニメーションクラス */
+  .animate-fadeIn {
+    animation: fadeIn 0.2s ease-out;
+  }
+
+  .animate-slideUp {
+    animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .animate-scaleIn {
+    animation: scaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  /* ボタン統一スタイル */
+  .btn-primary {
+    @apply px-4 py-3 min-h-[48px] rounded-lg font-medium;
+    @apply bg-[var(--primary)] text-white;
+    @apply transition-all duration-150 ease-out;
+    @apply active:scale-95 active:bg-[var(--primary-active)];
+    @apply shadow-sm active:shadow-md;
+  }
+
+  .btn-secondary {
+    @apply px-4 py-3 min-h-[44px] rounded-lg font-medium;
+    @apply bg-gray-100 text-gray-700;
+    @apply transition-all duration-150 ease-out;
+    @apply active:scale-95 active:bg-gray-200;
+  }
+
+  .btn-filter {
+    @apply px-4 py-3 min-h-[44px] rounded-md text-sm font-medium;
+    @apply transition-all duration-150 ease-out;
+    @apply active:scale-98;
+  }
+
+  .btn-filter-active {
+    @apply bg-[var(--primary)] text-white shadow-sm;
+  }
+
+  .btn-filter-inactive {
+    @apply bg-gray-200 text-gray-700;
+  }
+
+  /* カード統一スタイル */
+  .card-interactive {
+    @apply transition-all duration-200 ease-out;
+    @apply active:scale-[0.98] active:shadow-md;
+    @apply cursor-pointer;
+  }
+
+  /* ステータスバッジ */
+  .status-badge {
+    @apply px-2 py-1 rounded text-xs font-medium shadow-sm;
+    @apply transition-all duration-150;
+  }
+
+  .status-badge-active {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.2);
+  }
+
+  /* インタラクティブ要素 */
+  .interactive-label {
+    @apply flex items-center gap-3 p-4 min-h-[52px];
+    @apply bg-gray-50 rounded cursor-pointer;
+    @apply transition-colors duration-150;
+    @apply active:bg-gray-100;
+  }
+
+  /* タッチターゲット最小サイズ保証 */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+
+  /* スケールアニメーション */
+  .active\:scale-98:active {
+    transform: scale(0.98);
+  }
+}
+
+@layer components {
+  /* グローバルスタイル調整 */
+  body {
+    @apply bg-[var(--background)] text-gray-900;
+  }
+
+  /* チェックボックスサイズ統一 */
+  input[type="checkbox"] {
+    @apply w-6 h-6 shrink-0;
+    @apply text-[var(--primary)] rounded border-gray-300;
+    @apply focus:ring-[var(--primary)] focus:ring-offset-2;
+    @apply transition-all duration-150;
+  }
+
+  /* セレクトボックス統一 */
+  select {
+    @apply transition-all duration-150;
+    @apply focus:ring-2 focus:ring-[var(--primary)] focus:ring-offset-2;
+  }
+
+  /* インプット統一 */
+  input[type="text"],
+  input[type="date"],
+  textarea {
+    @apply transition-all duration-150;
+    @apply focus:ring-2 focus:ring-[var(--primary)] focus:ring-offset-1;
+    @apply focus:border-[var(--border-focus)];
+  }
+
+  /* モーダル背景 */
+  .modal-backdrop {
+    @apply fixed inset-0 bg-black bg-opacity-50 z-50;
+    @apply animate-fadeIn;
+  }
+
+  /* モーダルコンテンツ */
+  .modal-content {
+    @apply bg-white rounded-t-xl w-full max-h-[90vh];
+    @apply overflow-y-auto p-6;
+    @apply animate-slideUp;
+  }
+
+  /* 詳細パネル */
+  .detail-panel {
+    @apply fixed inset-0 bg-white z-50 overflow-y-auto;
+    @apply animate-slideUp;
+  }
+
+  /* ヘッダー固定 */
+  .header-sticky {
+    @apply bg-white border-b border-[var(--border)];
+    @apply sticky top-0 z-10 shadow-sm;
+  }
+
+  /* タスクカード */
+  .task-card {
+    @apply card-interactive;
+    @apply bg-white rounded-lg p-4 shadow-sm border-l-4;
+  }
+
+  /* グループセクション */
+  .task-group-header {
+    @apply flex items-center justify-between mb-3;
+  }
+
+  .task-group-title {
+    @apply text-base font-semibold text-gray-900;
+  }
+
+  .task-group-count {
+    @apply text-sm text-gray-500;
+  }
+
+  /* タスク名 */
+  .task-title {
+    @apply text-lg font-semibold mb-2;
+  }
+
+  .task-title-overdue {
+    @apply text-red-600;
+  }
+
+  /* バッジコンテナ */
+  .badge-container {
+    @apply flex flex-wrap gap-2 mb-2;
+  }
+
+  /* 絵文字統一 */
+  .emoji {
+    @apply inline-flex items-center justify-center text-lg;
+  }
+
+  .emoji-sm {
+    @apply inline-flex items-center justify-center text-base;
+  }
+}
+
+/* デザインシステムコメント */
+/*
+タイポグラフィースケール:
+- heading-1: text-2xl font-bold       (24px) - ページタイトル
+- heading-2: text-xl font-semibold    (20px) - セクションタイトル
+- heading-3: text-lg font-semibold    (18px) - カードタイトル
+- body-large: text-base font-medium   (16px) - 重要テキスト
+- body: text-sm                       (14px) - 通常テキスト
+- caption: text-xs font-medium        (12px) - 補足・バッジ
+
+Spacingスケール:
+- xs: 0.5rem   (8px)  - 最小間隔
+- sm: 0.75rem  (12px) - 小要素間
+- md: 1rem     (16px) - デフォルト
+- lg: 1.5rem   (24px) - セクション間
+- xl: 2rem     (32px) - 大きなセクション
+
+タッチターゲット:
+- 最小: 44x44px（Appleガイドライン）
+- 推奨: 48x48px（Material Design）
+*/

@@ -73,17 +73,18 @@ export default function MobileTaskDetail({
   };
 
   return (
-    <div className="fixed inset-0 bg-white z-50 overflow-y-auto">
+    <div className="detail-panel">
       {/* ヘッダー */}
-      <div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-3 z-10">
+      <div className="header-sticky px-4 py-3">
         <div className="flex items-center justify-between">
           <button
             onClick={onClose}
-            className="text-blue-600 font-medium text-lg"
+            className="text-[var(--primary)] font-medium text-lg touch-target flex items-center gap-1"
           >
-            ← 戻る
+            <span className="emoji">←</span>
+            <span>戻る</span>
           </button>
-          <h2 className="text-lg font-bold text-gray-900">詳細</h2>
+          <h2 className="text-xl font-semibold text-gray-900">詳細</h2>
           <div className="w-12" /> {/* スペーサー */}
         </div>
       </div>
@@ -138,7 +139,7 @@ export default function MobileTaskDetail({
             <select
               value={localTask.priority || ''}
               onChange={(e) => onUpdateField(localTask.id, 'priority', e.target.value || undefined)}
-              className={`w-full px-3 py-2 rounded-md text-sm font-medium cursor-pointer ${priorityColor(localTask.priority)}`}
+              className={`w-full px-4 py-3 min-h-[48px] rounded-md text-sm font-medium cursor-pointer transition-all ${priorityColor(localTask.priority)}`}
             >
               <option value="">優先度なし</option>
               <option value="今すぐやる">今すぐやる</option>
@@ -155,7 +156,7 @@ export default function MobileTaskDetail({
             <select
               value={localTask.status}
               onChange={(e) => onUpdateField(localTask.id, 'status', e.target.value)}
-              className={`w-full px-3 py-2 rounded-md text-sm font-medium border ${statusColor(localTask.status)} cursor-pointer`}
+              className={`w-full px-4 py-3 min-h-[48px] rounded-md text-sm font-medium border transition-all ${statusColor(localTask.status)} cursor-pointer`}
             >
               <option value="未着手">未着手</option>
               <option value="進行中">進行中</option>
@@ -199,15 +200,17 @@ export default function MobileTaskDetail({
             <label className="text-sm font-semibold text-gray-700">AI提案</label>
             <button
               onClick={onGenerateAI}
-              className="text-xs px-3 py-1.5 bg-blue-600 text-white rounded-lg active:bg-blue-700"
+              className="text-sm px-4 py-2.5 min-h-[44px] bg-blue-600 text-white rounded-lg font-medium transition-all duration-150 active:scale-95 active:bg-blue-700 flex items-center gap-2"
             >
-              {localTask.ai_suggestion ? '再生成' : '✨ AI提案を生成'}
+              <span className="emoji-sm">✨</span>
+              <span>{localTask.ai_suggestion ? '再生成' : 'AI提案を生成'}</span>
             </button>
           </div>
           {localTask.ai_suggestion && (
             <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded">
-              <p className="text-sm text-blue-900">
-                <span className="font-semibold">💡 最初の一歩:</span> {localTask.ai_suggestion}
+              <p className="text-sm text-blue-900 flex items-start gap-2">
+                <span className="emoji-sm">💡</span>
+                <span><span className="font-semibold">最初の一歩:</span> {localTask.ai_suggestion}</span>
               </p>
             </div>
           )}
@@ -220,12 +223,11 @@ export default function MobileTaskDetail({
           </label>
           <div className="space-y-2 mb-3">
             {subtasks.map((subtask) => (
-              <label key={subtask.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded cursor-pointer active:bg-gray-100">
+              <label key={subtask.id} className="interactive-label">
                 <input
                   type="checkbox"
                   checked={subtask.completed}
                   onChange={() => onToggleSubtask(subtask)}
-                  className="w-5 h-5 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
                 />
                 <span className={`flex-1 text-sm ${subtask.completed ? 'line-through text-gray-400' : 'text-gray-700'}`}>
                   {subtask.title}
@@ -240,11 +242,11 @@ export default function MobileTaskDetail({
               onChange={(e) => setNewSubtaskTitle(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleAddSubtask()}
               placeholder="サブタスクを追加..."
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
+              className="flex-1 px-3 py-2 min-h-[44px] border border-gray-300 rounded-lg text-sm"
             />
             <button
               onClick={handleAddSubtask}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-lg active:bg-indigo-700 text-sm font-medium"
+              className="px-4 py-2 min-h-[44px] bg-indigo-600 text-white rounded-lg active:bg-indigo-700 text-sm font-medium transition-all duration-150 active:scale-95"
             >
               追加
             </button>

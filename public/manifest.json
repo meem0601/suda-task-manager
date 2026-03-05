@@ -1,12 +1,12 @@
 {
   "name": "須田タスク管理",
   "short_name": "タスク管理",
-  "description": "須田様専用タスク管理システム",
+  "description": "プロフェッショナルなタスク管理アプリ",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#3b82f6",
-  "orientation": "portrait-primary",
+  "theme_color": "#4F46E5",
+  "orientation": "portrait",
   "icons": [
     {
       "src": "/icon-192.png",

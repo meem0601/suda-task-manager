@@ -1,0 +1,403 @@
+/**
+ * 須田タスク管理アプリ - UIデザイン改善実装例
+ * 
+ * このファイルは実装のガイドラインです。
+ * 実際のファイルに適用する際は、段階的に変更してください。
+ */
+
+// ============================================
+// 1. フィルターボタンの改善
+// ============================================
+
+// ❌ Before
+<div className="flex gap-2 mb-3">
+  <button
+    onClick={() => setFilter('all')}
+    className={`px-3 py-1.5 rounded-md text-sm font-medium flex-1 ${
+      filter === 'all' ? 'bg-gray-700 text-white' : 'bg-gray-200 text-gray-700'
+    }`}
+  >
+    すべて
+  </button>
+  ...
+</div>
+
+// ✅ After
+<div className="flex gap-3 mb-3"> {/* gap-2 → gap-3 */}
+  <button
+    onClick={() => setFilter('all')}
+    className={`btn-filter flex-1 ${
+      filter === 'all' ? 'btn-filter-active' : 'btn-filter-inactive'
+    }`}
+  >
+    すべて
+  </button>
+  <button
+    onClick={() => setFilter('個人')}
+    className={`btn-filter flex-1 ${
+      filter === '個人' ? 'btn-filter-active' : 'btn-filter-inactive'
+    }`}
+  >
+    個人
+  </button>
+  <button
+    onClick={() => setFilter('事業')}
+    className={`btn-filter flex-1 ${
+      filter === '事業' ? 'btn-filter-active' : 'btn-filter-inactive'
+    }`}
+  >
+    事業
+  </button>
+</div>
+
+// ============================================
+// 2. メインボタンの改善
+// ============================================
+
+// ❌ Before
+<button
+  onClick={onGenerateAI}
+  className="w-full px-4 py-2.5 bg-blue-600 text-white rounded-lg font-medium active:bg-blue-700 flex items-center justify-center gap-2"
+>
+  <span>✨</span>
+  <span className="text-sm">AI提案を一括生成</span>
+</button>
+
+// ✅ After
+<button
+  onClick={onGenerateAI}
+  className="btn-primary w-full flex items-center justify-center gap-2"
+>
+  <span className="emoji">✨</span>
+  <span className="text-sm">AI提案を一括生成</span>
+</button>
+
+<button
+  onClick={onAddTask}
+  className="btn-primary w-full flex items-center justify-center gap-2"
+>
+  <span className="emoji">+</span>
+  <span className="text-sm">タスク追加</span>
+</button>
+
+// ============================================
+// 3. タスクカードの改善
+// ============================================
+
+// ❌ Before
+<div
+  key={task.id}
+  onClick={() => onSelectTask(task)}
+  className="bg-white rounded-lg p-4 shadow-sm border-l-4 active:bg-gray-50"
+  style={{ borderLeftColor: getBusinessColor(task.category === '個人' ? undefined : task.business_type) }}
+>
+  <h4 className={`font-medium mb-2 ${isOverdue(task) ? 'text-red-600' : 'text-gray-900'}`}>
+    {task.title}
+  </h4>
+  ...
+</div>
+
+// ✅ After
+<div
+  key={task.id}
+  onClick={() => onSelectTask(task)}
+  className="task-card"
+  style={{ borderLeftColor: getBusinessColor(task.category === '個人' ? undefined : task.business_type) }}
+>
+  <h4 className={`task-title ${isOverdue(task) ? 'task-title-overdue' : 'text-gray-900'}`}>
+    {task.title}
+  </h4>
+  
+  {/* バッジ群 */}
+  <div className="badge-container">
+    {task.priority && (
+      <span className={`status-badge ${priorityColor(task.priority)}`}>
+        {task.priority}
+      </span>
+    )}
+    
+    {task.category === '事業' && task.business_type && (
+      <span 
+        className="status-badge text-white"
+        style={{ backgroundColor: getBusinessColor(task.business_type) }}
+      >
+        {task.business_type}
+      </span>
+    )}
+
+    <span className={`status-badge ${statusColor(task.status)}`}>
+      {task.status}
+    </span>
+  </div>
+
+  {/* 期限 */}
+  {task.due_date && (
+    <div className={`text-xs ${
+      isOverdue(task) ? 'text-red-600 font-bold' : 
+      isToday(task) ? 'text-blue-600 font-medium' : 
+      'text-gray-500'
+    }`}>
+      <span className="emoji-sm">📅</span> {new Date(task.due_date).toLocaleDateString('ja-JP')}
+      {isOverdue(task) && ' ⚠️ 期限切れ'}
+      {isToday(task) && ' 今日'}
+    </div>
+  )}
+
+  {/* AI提案プレビュー */}
+  {task.ai_suggestion && (
+    <div className="mt-2 text-xs text-blue-700 bg-blue-50 px-2 py-1 rounded">
+      <span className="emoji-sm">💡</span> {task.ai_suggestion.substring(0, 50)}{task.ai_suggestion.length > 50 ? '...' : ''}
+    </div>
+  )}
+</div>
+
+// ============================================
+// 4. グループヘッダーの改善
+// ============================================
+
+// ❌ Before
+<div className="flex items-center justify-between mb-3">
+  <h3 className="font-semibold text-gray-900">{groupName}</h3>
+  <span className="text-sm text-gray-500">{groupTasks.length}</span>
+</div>
+
+// ✅ After
+<div className="task-group-header">
+  <h3 className="task-group-title">
+    <span className="emoji">{groupName.split(' ')[0]}</span> {/* 絵文字分離 */}
+    <span className="ml-2">{groupName.split(' ').slice(1).join(' ')}</span>
+  </h3>
+  <span className="task-group-count">{groupTasks.length}</span>
+</div>
+
+// ============================================
+// 5. サブタスクチェックボックスの改善
+// ============================================
+
+// ❌ Before
+<label key={subtask.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded cursor-pointer active:bg-gray-100">
+  <input
+    type="checkbox"
+    checked={subtask.completed}
+    onChange={() => onToggleSubtask(subtask)}
+    className="w-5 h-5 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
+  />
+  <span className={`flex-1 text-sm ${subtask.completed ? 'line-through text-gray-400' : 'text-gray-700'}`}>
+    {subtask.title}
+  </span>
+</label>
+
+// ✅ After
+<label key={subtask.id} className="interactive-label">
+  <input
+    type="checkbox"
+    checked={subtask.completed}
+    onChange={() => onToggleSubtask(subtask)}
+  />
+  <span className={`flex-1 text-sm ${subtask.completed ? 'line-through text-gray-400' : 'text-gray-700'}`}>
+    {subtask.title}
+  </span>
+</label>
+
+// ============================================
+// 6. モーダルの改善
+// ============================================
+
+// ❌ Before
+{showAddModal && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end z-50">
+    <div className="bg-white rounded-t-xl w-full max-h-[90vh] overflow-y-auto p-6">
+      <h2 className="text-xl font-bold text-gray-900 mb-4">新しいタスクを追加</h2>
+      ...
+    </div>
+  </div>
+)}
+
+// ✅ After
+{showAddModal && (
+  <div className="modal-backdrop flex items-end">
+    <div className="modal-content">
+      <h2 className="text-2xl font-bold text-gray-900 mb-4">新しいタスクを追加</h2> {/* text-xl → text-2xl */}
+      
+      {/* ... フォーム内容 ... */}
+      
+      <div className="flex flex-col gap-3 mt-6">
+        <button
+          onClick={handleAddTask}
+          className="btn-primary w-full"
+        >
+          追加する
+        </button>
+        <button
+          onClick={() => setShowAddModal(false)}
+          className="btn-secondary w-full"
+        >
+          キャンセル
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+// ============================================
+// 7. 詳細パネルの改善
+// ============================================
+
+// ❌ Before
+{selectedTask && (
+  <div className="fixed inset-0 bg-white z-50 overflow-y-auto">
+    <div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-3 z-10">
+      ...
+    </div>
+  </div>
+)}
+
+// ✅ After
+{selectedTask && (
+  <div className="detail-panel">
+    <div className="header-sticky px-4 py-3">
+      <div className="flex items-center justify-between">
+        <button
+          onClick={onClose}
+          className="text-[var(--primary)] font-medium text-lg touch-target flex items-center gap-1"
+        >
+          <span className="emoji">←</span>
+          <span>戻る</span>
+        </button>
+        <h2 className="text-xl font-semibold text-gray-900">詳細</h2> {/* font-bold → font-semibold */}
+        <div className="w-12" /> {/* スペーサー */}
+      </div>
+    </div>
+
+    {/* コンテンツ */}
+    <div className="p-4 space-y-6">
+      ...
+    </div>
+  </div>
+)}
+
+// ============================================
+// 8. ページタイトルの改善
+// ============================================
+
+// ❌ Before
+<h1 className="text-xl font-bold text-gray-900 mb-3">📋 タスク管理</h1>
+
+// ✅ After
+<h1 className="text-2xl font-bold text-gray-900 mb-3 flex items-center gap-2">
+  <span className="emoji">📋</span>
+  <span>タスク管理</span>
+</h1>
+
+// ============================================
+// 9. AI提案ボタン（詳細画面）の改善
+// ============================================
+
+// ❌ Before
+<button
+  onClick={onGenerateAI}
+  className="text-xs px-3 py-1.5 bg-blue-600 text-white rounded-lg active:bg-blue-700"
+>
+  {localTask.ai_suggestion ? '再生成' : '✨ AI提案を生成'}
+</button>
+
+// ✅ After
+<button
+  onClick={onGenerateAI}
+  className="text-sm px-4 py-2.5 min-h-[44px] bg-blue-600 text-white rounded-lg font-medium transition-all duration-150 active:scale-95 active:bg-blue-700 flex items-center gap-2"
+>
+  <span className="emoji-sm">✨</span>
+  <span>{localTask.ai_suggestion ? '再生成' : 'AI提案を生成'}</span>
+</button>
+
+// ============================================
+// 10. セレクトボックスの改善
+// ============================================
+
+// ❌ Before
+<select
+  value={localTask.priority || ''}
+  onChange={(e) => onUpdateField(localTask.id, 'priority', e.target.value || undefined)}
+  className={`w-full px-3 py-2 rounded-md text-sm font-medium cursor-pointer ${priorityColor(localTask.priority)}`}
+>
+  <option value="">優先度なし</option>
+  <option value="今すぐやる">今すぐやる</option>
+  ...
+</select>
+
+// ✅ After
+<select
+  value={localTask.priority || ''}
+  onChange={(e) => onUpdateField(localTask.id, 'priority', e.target.value || undefined)}
+  className={`w-full px-4 py-3 min-h-[48px] rounded-md text-sm font-medium cursor-pointer transition-all ${priorityColor(localTask.priority)}`}
+>
+  <option value="">優先度なし</option>
+  <option value="今すぐやる">今すぐやる</option>
+  <option value="今週やる">今週やる</option>
+  <option value="今月やる">今月やる</option>
+  <option value="高">高</option>
+  <option value="中">中</option>
+  <option value="低">低</option>
+</select>
+
+// ============================================
+// 実装チェックリスト
+// ============================================
+
+/*
+□ globals.cssをglobals-improved.cssに置き換え
+□ フィルターボタンのpadding調整（py-1.5 → py-3）
+□ メインボタンをbtn-primaryクラスに統一
+□ タスクカードにcard-interactiveクラス追加
+□ チェックボックスにinteractive-labelクラス追加
+□ モーダルにanimate-slideUpクラス追加
+□ ページタイトルをtext-2xlに変更
+□ タスク名をtext-lgに変更
+□ グループラベルをtext-baseに変更
+□ 絵文字をemojiクラスでwrap
+□ すべてのボタンにmin-h-[44px]追加
+□ セレクトボックスのpadding調整
+□ AI提案ボタンのサイズ調整
+□ 削除ボタン追加（オプション）
+
+実装後にテスト:
+□ 実機でタップテスト（44px確保されているか）
+□ アニメーションの体感速度
+□ カラーコントラスト確認
+□ すべてのボタンが押しやすいか
+*/
+
+// ============================================
+// カラーヘルパー関数（変更なし）
+// ============================================
+
+const getBusinessColor = (businessType?: string) => {
+  switch (businessType) {
+    case '不動産': return '#00C875';
+    case '人材': return '#0073EA';
+    case '結婚相談所': return '#FF3D57';
+    case 'コーポレート': return '#FDAB3D';
+    default: return '#6C3CE1';
+  }
+};
+
+const priorityColor = (priority?: string) => {
+  switch (priority) {
+    case '今すぐやる': return 'bg-red-500 text-white';
+    case '今週やる': return 'bg-orange-500 text-white';
+    case '今月やる': return 'bg-yellow-500 text-white';
+    case '高': return 'bg-pink-500 text-white';
+    case '中': return 'bg-blue-500 text-white';
+    case '低': return 'bg-gray-400 text-white';
+    default: return 'bg-gray-300 text-gray-700';
+  }
+};
+
+const statusColor = (status: string) => {
+  switch (status) {
+    case '未着手': return 'bg-gray-100 text-gray-700 border-gray-300';
+    case '進行中': return 'bg-blue-100 text-blue-700 border-blue-300';
+    case '完了': return 'bg-green-100 text-green-700 border-green-300';
+    default: return 'bg-gray-100 text-gray-700 border-gray-300';
+  }
+};

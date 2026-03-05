@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { supabase, Task, Subtask } from '@/lib/supabase';
+import NotificationPrompt from './components/NotificationPrompt';
 
 export default function Home() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -219,33 +220,39 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* 通知許可プロンプト */}
+      <NotificationPrompt />
+      
       {/* ヘッダー（固定） */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
         <div className="px-4 py-3">
-          <h1 className="text-xl font-bold text-gray-900 mb-3">📋 タスク管理</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-3 flex items-center gap-2">
+            <span className="emoji">📋</span>
+            <span>タスク管理</span>
+          </h1>
           
           {/* フィルター */}
-          <div className="flex gap-2 mb-3">
+          <div className="flex gap-3 mb-3">
             <button
               onClick={() => setFilter('all')}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium flex-1 ${
-                filter === 'all' ? 'bg-gray-700 text-white' : 'bg-gray-200 text-gray-700'
+              className={`btn-filter flex-1 ${
+                filter === 'all' ? 'btn-filter-active' : 'btn-filter-inactive'
               }`}
             >
               すべて
             </button>
             <button
               onClick={() => setFilter('個人')}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium flex-1 ${
-                filter === '個人' ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-700'
+              className={`btn-filter flex-1 ${
+                filter === '個人' ? 'btn-filter-active' : 'btn-filter-inactive'
               }`}
             >
               個人
             </button>
             <button
               onClick={() => setFilter('事業')}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium flex-1 ${
-                filter === '事業' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'
+              className={`btn-filter flex-1 ${
+                filter === '事業' ? 'btn-filter-active' : 'btn-filter-inactive'
               }`}
             >
               事業
@@ -272,16 +279,16 @@ export default function Home() {
                   alert('AI提案の一括生成に失敗しました');
                 }
               }}
-              className="w-full px-4 py-2.5 bg-blue-600 text-white rounded-lg font-medium active:bg-blue-700 flex items-center justify-center gap-2"
+              className="btn-primary w-full flex items-center justify-center gap-2 bg-blue-600 active:bg-blue-700"
             >
-              <span>✨</span>
+              <span className="emoji">✨</span>
               <span className="text-sm">AI提案を一括生成</span>
             </button>
             <button
               onClick={() => setShowAddModal(true)}
-              className="w-full px-4 py-2.5 bg-indigo-600 text-white rounded-lg font-medium active:bg-indigo-700 flex items-center justify-center gap-2"
+              className="btn-primary w-full flex items-center justify-center gap-2"
             >
-              <span>+</span>
+              <span className="emoji">+</span>
               <span className="text-sm">タスク追加</span>
             </button>
           </div>
@@ -300,9 +307,9 @@ export default function Home() {
             
             return (
               <div key={groupName}>
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-semibold text-gray-900">{groupName}</h3>
-                  <span className="text-sm text-gray-500">{groupTasks.length}</span>
+                <div className="task-group-header">
+                  <h3 className="task-group-title">{groupName}</h3>
+                  <span className="task-group-count">{groupTasks.length}</span>
                 </div>
                 
                 <div className="space-y-3">
@@ -310,53 +317,55 @@ export default function Home() {
                     <div
                       key={task.id}
                       onClick={() => setSelectedTask(task)}
-                      className="bg-white rounded-lg p-4 shadow-sm border-l-4 active:bg-gray-50"
+                      className="task-card"
                       style={{ borderLeftColor: getBusinessColor(task.category === '個人' ? undefined : task.business_type) }}
                     >
                       {/* タスク名 */}
-                      <h4 className={`font-medium mb-2 ${isOverdue(task) ? 'text-red-600' : 'text-gray-900'}`}>
+                      <h4 className={`task-title ${isOverdue(task) ? 'task-title-overdue' : 'text-gray-900'}`}>
                         {task.title}
                       </h4>
 
                       {/* バッジ群 */}
-                      <div className="flex flex-wrap gap-2 mb-2">
+                      <div className="badge-container">
                         {task.priority && (
-                          <span className={`px-2 py-1 rounded text-xs font-medium ${priorityColor(task.priority)}`}>
+                          <span className={`status-badge ${priorityColor(task.priority)}`}>
                             {task.priority}
                           </span>
                         )}
                         
                         {task.category === '事業' && task.business_type && (
                           <span 
-                            className="px-2 py-1 rounded text-xs font-medium text-white"
+                            className="status-badge text-white"
                             style={{ backgroundColor: getBusinessColor(task.business_type) }}
                           >
                             {task.business_type}
                           </span>
                         )}
 
-                        <span className={`px-2 py-1 rounded text-xs font-medium ${statusColor(task.status)}`}>
+                        <span className={`status-badge ${statusColor(task.status)}`}>
                           {task.status}
                         </span>
                       </div>
 
                       {/* 期限 */}
                       {task.due_date && (
-                        <div className={`text-xs ${
+                        <div className={`text-xs flex items-center gap-1 ${
                           isOverdue(task) ? 'text-red-600 font-bold' : 
                           isToday(task) ? 'text-blue-600 font-medium' : 
                           'text-gray-500'
                         }`}>
-                          📅 {new Date(task.due_date).toLocaleDateString('ja-JP')}
-                          {isOverdue(task) && ' ⚠️ 期限切れ'}
-                          {isToday(task) && ' 今日'}
+                          <span className="emoji-sm">📅</span> 
+                          <span>{new Date(task.due_date).toLocaleDateString('ja-JP')}</span>
+                          {isOverdue(task) && <span> ⚠️ 期限切れ</span>}
+                          {isToday(task) && <span> 今日</span>}
                         </div>
                       )}
 
                       {/* AI提案プレビュー */}
                       {task.ai_suggestion && (
-                        <div className="mt-2 text-xs text-blue-700 bg-blue-50 px-2 py-1 rounded">
-                          💡 {task.ai_suggestion.substring(0, 50)}{task.ai_suggestion.length > 50 ? '...' : ''}
+                        <div className="mt-2 text-xs text-blue-700 bg-blue-50 px-2 py-1 rounded flex items-start gap-1">
+                          <span className="emoji-sm">💡</span>
+                          <span>{task.ai_suggestion.substring(0, 50)}{task.ai_suggestion.length > 50 ? '...' : ''}</span>
                         </div>
                       )}
                     </div>
@@ -377,17 +386,18 @@ export default function Home() {
 
       {/* タスク詳細パネル（全画面） */}
       {selectedTask && (
-        <div className="fixed inset-0 bg-white z-50 overflow-y-auto">
+        <div className="detail-panel">
           {/* ヘッダー */}
-          <div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-3 z-10">
+          <div className="header-sticky px-4 py-3">
             <div className="flex items-center justify-between">
               <button
                 onClick={() => setSelectedTask(null)}
-                className="text-blue-600 font-medium text-lg"
+                className="text-[var(--primary)] font-medium text-lg touch-target flex items-center gap-1"
               >
-                ← 戻る
+                <span className="emoji">←</span>
+                <span>戻る</span>
               </button>
-              <h2 className="text-lg font-bold text-gray-900">詳細</h2>
+              <h2 className="text-xl font-semibold text-gray-900">詳細</h2>
               <div className="w-12" />
             </div>
           </div>
@@ -442,7 +452,7 @@ export default function Home() {
                 <select
                   value={selectedTask.priority || ''}
                   onChange={(e) => handleUpdateField(selectedTask.id, 'priority', e.target.value || undefined)}
-                  className={`w-full px-3 py-2 rounded-md text-sm font-medium cursor-pointer ${priorityColor(selectedTask.priority)}`}
+                  className={`w-full px-4 py-3 min-h-[48px] rounded-md text-sm font-medium cursor-pointer transition-all ${priorityColor(selectedTask.priority)}`}
                 >
                   <option value="">優先度なし</option>
                   <option value="今すぐやる">今すぐやる</option>
@@ -459,7 +469,7 @@ export default function Home() {
                 <select
                   value={selectedTask.status}
                   onChange={(e) => handleUpdateField(selectedTask.id, 'status', e.target.value)}
-                  className={`w-full px-3 py-2 rounded-md text-sm font-medium border ${statusColor(selectedTask.status)} cursor-pointer`}
+                  className={`w-full px-4 py-3 min-h-[48px] rounded-md text-sm font-medium border transition-all ${statusColor(selectedTask.status)} cursor-pointer`}
                 >
                   <option value="未着手">未着手</option>
                   <option value="進行中">進行中</option>
@@ -519,15 +529,17 @@ export default function Home() {
                       alert('AI提案の生成に失敗しました');
                     }
                   }}
-                  className="text-xs px-3 py-1.5 bg-blue-600 text-white rounded-lg active:bg-blue-700"
+                  className="text-sm px-4 py-2.5 min-h-[44px] bg-blue-600 text-white rounded-lg font-medium transition-all duration-150 active:scale-95 active:bg-blue-700 flex items-center gap-2"
                 >
-                  {selectedTask.ai_suggestion ? '再生成' : '✨ AI提案を生成'}
+                  <span className="emoji-sm">✨</span>
+                  <span>{selectedTask.ai_suggestion ? '再生成' : 'AI提案を生成'}</span>
                 </button>
               </div>
               {selectedTask.ai_suggestion && (
                 <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded">
-                  <p className="text-sm text-blue-900">
-                    <span className="font-semibold">💡 最初の一歩:</span> {selectedTask.ai_suggestion}
+                  <p className="text-sm text-blue-900 flex items-start gap-2">
+                    <span className="emoji-sm">💡</span>
+                    <span><span className="font-semibold">最初の一歩:</span> {selectedTask.ai_suggestion}</span>
                   </p>
                 </div>
               )}
@@ -540,12 +552,11 @@ export default function Home() {
               </label>
               <div className="space-y-2 mb-3">
                 {subtasks.map((subtask) => (
-                  <label key={subtask.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded cursor-pointer active:bg-gray-100">
+                  <label key={subtask.id} className="interactive-label">
                     <input
                       type="checkbox"
                       checked={subtask.completed}
                       onChange={() => handleToggleSubtask(subtask)}
-                      className="w-5 h-5 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
                     />
                     <span className={`flex-1 text-sm ${subtask.completed ? 'line-through text-gray-400' : 'text-gray-700'}`}>
                       {subtask.title}
@@ -560,11 +571,11 @@ export default function Home() {
                   onChange={(e) => setNewSubtaskTitle(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleAddSubtask()}
                   placeholder="サブタスクを追加..."
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  className="flex-1 px-3 py-2 min-h-[44px] border border-gray-300 rounded-lg text-sm"
                 />
                 <button
                   onClick={handleAddSubtask}
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg active:bg-indigo-700 text-sm font-medium"
+                  className="px-4 py-2 min-h-[44px] bg-indigo-600 text-white rounded-lg active:bg-indigo-700 text-sm font-medium transition-all duration-150 active:scale-95"
                 >
                   追加
                 </button>
@@ -584,9 +595,9 @@ export default function Home() {
 
       {/* タスク追加モーダル */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end z-50">
-          <div className="bg-white rounded-t-xl w-full max-h-[90vh] overflow-y-auto p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">新しいタスクを追加</h2>
+        <div className="modal-backdrop flex items-end">
+          <div className="modal-content">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">新しいタスクを追加</h2>
             
             <div className="space-y-4">
               <div>
@@ -687,13 +698,13 @@ export default function Home() {
             <div className="flex flex-col gap-3 mt-6">
               <button
                 onClick={handleAddTask}
-                className="w-full px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium active:bg-indigo-700"
+                className="btn-primary w-full"
               >
                 追加する
               </button>
               <button
                 onClick={() => setShowAddModal(false)}
-                className="w-full px-6 py-3 bg-gray-100 text-gray-700 rounded-lg font-medium active:bg-gray-200"
+                className="btn-secondary w-full"
               >
                 キャンセル
               </button>

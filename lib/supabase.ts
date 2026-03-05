@@ -31,3 +31,25 @@ export interface Subtask {
   created_at: string;
   completed_at?: string;
 }
+
+// 通知の型定義
+export interface Notification {
+  id: string;
+  task_id: string;
+  type: 'reminder_1day' | 'reminder_1hour' | 'task_completed' | 'task_overdue';
+  title: string;
+  body: string;
+  sent_at?: string;
+  read_at?: string;
+  created_at: string;
+}
+
+// プッシュ購読の型定義
+export interface PushSubscription {
+  id: string;
+  endpoint: string;
+  p256dh: string;
+  auth: string;
+  created_at: string;
+  updated_at: string;
+}
