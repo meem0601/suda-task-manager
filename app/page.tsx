@@ -3,10 +3,14 @@
 import { useEffect, useState } from 'react';
 import { supabase, Task, Subtask } from '@/lib/supabase';
 import MondayTable from './components/MondayTable';
+import MobileTaskView from './components/MobileTaskView';
+import MobileTaskDetail from './components/MobileTaskDetail';
+import { useMediaQuery } from './hooks/useMediaQuery';
 
 type ViewMode = 'dashboard' | 'board' | 'table';
 
 export default function Home() {
+  const isMobile = useMediaQuery('(max-width: 768px)');
   const [tasks, setTasks] = useState<Task[]>([]);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [subtasks, setSubtasks] = useState<Subtask[]>([]);
@@ -508,6 +512,190 @@ export default function Home() {
     );
   };
 
+  // モバイル表示
+  if (isMobile) {
+    return (
+      <>
+        {selectedTask ? (
+          <MobileTaskDetail
+            task={selectedTask}
+            subtasks={subtasks}
+            onClose={() => setSelectedTask(null)}
+            onUpdateField={handleUpdateField}
+            onAddSubtask={handleAddSubtask}
+            onToggleSubtask={handleToggleSubtask}
+            onGenerateAI={async () => {
+              try {
+                const response = await fetch('/api/ai-suggestion', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ taskId: selectedTask.id })
+                });
+                const data = await response.json();
+                if (data.success) {
+                  setSelectedTask({ ...selectedTask, ai_suggestion: data.ai_suggestion });
+                  fetchTasks();
+                }
+              } catch (error) {
+                console.error('Error generating AI suggestion:', error);
+                alert('AI提案の生成に失敗しました');
+              }
+            }}
+          />
+        ) : (
+          <>
+            <MobileTaskView
+              tasks={tasks}
+              filter={filter}
+              onFilterChange={setFilter}
+              onSelectTask={setSelectedTask}
+              onUpdateStatus={(taskId, status) => handleUpdateField(taskId, 'status', status)}
+              onAddTask={() => setShowAddModal(true)}
+              onGenerateAI={async () => {
+                if (!confirm('全タスクにAI提案を一括生成しますか？（AI提案がないタスクのみ対象）')) return;
+                
+                try {
+                  const response = await fetch('/api/ai-suggestion', {
+                    method: 'PUT'
+                  });
+                  const data = await response.json();
+                  if (data.success) {
+                    alert(`${data.count}個のタスクにAI提案を生成しました！`);
+                    fetchTasks();
+                  }
+                } catch (error) {
+                  console.error('Error batch generating AI suggestions:', error);
+                  alert('AI提案の一括生成に失敗しました');
+                }
+              }}
+            />
+            
+            {/* タスク追加モーダル（モバイル用） */}
+            {showAddModal && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end z-50">
+                <div className="bg-white rounded-t-xl w-full max-h-[90vh] overflow-y-auto p-6">
+                  <h2 className="text-xl font-bold text-gray-900 mb-4">新しいタスクを追加</h2>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        タスク名 <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={newTask.title}
+                        onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                        placeholder="例: 資料作成"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">期限</label>
+                      <input
+                        type="date"
+                        value={newTask.due_date || ''}
+                        onChange={(e) => setNewTask({ ...newTask, due_date: e.target.value || undefined })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">説明</label>
+                      <textarea
+                        value={newTask.description}
+                        onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                        rows={3}
+                        placeholder="詳細な説明（任意）"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">カテゴリ</label>
+                      <div className="flex gap-4">
+                        <label className="flex items-center cursor-pointer">
+                          <input
+                            type="radio"
+                            checked={newTask.category === '個人'}
+                            onChange={() => setNewTask({ ...newTask, category: '個人', business_type: undefined })}
+                            className="mr-2"
+                          />
+                          <span>個人</span>
+                        </label>
+                        <label className="flex items-center cursor-pointer">
+                          <input
+                            type="radio"
+                            checked={newTask.category === '事業'}
+                            onChange={() => setNewTask({ ...newTask, category: '事業' })}
+                            className="mr-2"
+                          />
+                          <span>事業</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    {newTask.category === '事業' && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">事業種別</label>
+                        <select
+                          value={newTask.business_type || ''}
+                          onChange={(e) => setNewTask({ ...newTask, business_type: e.target.value as Task['business_type'] })}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                        >
+                          <option value="">選択してください</option>
+                          <option value="不動産">不動産</option>
+                          <option value="人材">人材</option>
+                          <option value="経済圏">経済圏</option>
+                          <option value="結婚相談所">結婚相談所</option>
+                          <option value="コーポレート">コーポレート</option>
+                          <option value="その他">その他</option>
+                        </select>
+                      </div>
+                    )}
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">優先度</label>
+                      <select
+                        value={newTask.priority || ''}
+                        onChange={(e) => setNewTask({ ...newTask, priority: e.target.value as Task['priority'] })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                      >
+                        <option value="">選択してください</option>
+                        <option value="今すぐやる">今すぐやる</option>
+                        <option value="今週やる">今週やる</option>
+                        <option value="今月やる">今月やる</option>
+                        <option value="高">高</option>
+                        <option value="中">中</option>
+                        <option value="低">低</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-3 mt-6">
+                    <button
+                      onClick={handleAddTask}
+                      className="w-full px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium active:bg-indigo-700"
+                    >
+                      追加する
+                    </button>
+                    <button
+                      onClick={() => setShowAddModal(false)}
+                      className="w-full px-6 py-3 bg-gray-100 text-gray-700 rounded-lg font-medium active:bg-gray-200"
+                    >
+                      キャンセル
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </>
+    );
+  }
+
+  // デスクトップ表示
   return (
     <div className="min-h-screen bg-gray-50">
       {/* ヘッダー */}
