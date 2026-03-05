@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { supabase, Task, Subtask } from '@/lib/supabase';
-import NotificationPrompt from './components/NotificationPrompt';
 import { validateTask, validateSubtaskTitle } from '@/lib/validation';
 
 export default function Home() {
@@ -13,6 +12,7 @@ export default function Home() {
   const [filter, setFilter] = useState<'all' | '個人' | '事業'>('all');
   const [showAddModal, setShowAddModal] = useState(false);
   const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   
   const [newTask, setNewTask] = useState({
     title: '',
@@ -59,7 +59,7 @@ export default function Home() {
       .from('subtasks')
       .select('*')
       .eq('task_id', taskId)
-      .order('created_at', { ascending: true });
+      .order('created_at', { ascending: true});
 
     if (error) {
       console.error('Error fetching subtasks:', error);
@@ -69,7 +69,6 @@ export default function Home() {
   };
 
   const handleAddTask = async () => {
-    // バリデーション
     const validation = validateTask(newTask);
     if (!validation.valid) {
       alert(validation.error);
@@ -125,59 +124,11 @@ export default function Home() {
     }
   };
 
-  const handleAddSubtask = async () => {
-    if (!selectedTask) return;
-
-    // バリデーション
-    const validation = validateSubtaskTitle(newSubtaskTitle);
-    if (!validation.valid) {
-      alert(validation.error);
-      return;
-    }
-
-    const { error } = await supabase
-      .from('subtasks')
-      .insert([
-        {
-          task_id: selectedTask.id,
-          title: newSubtaskTitle,
-          completed: false
-        }
-      ]);
-
-    if (error) {
-      console.error('Error adding subtask:', error);
-      alert('サブタスクの追加に失敗しました');
-    } else {
-      setNewSubtaskTitle('');
-      fetchSubtasks(selectedTask.id);
-    }
-  };
-
-  const handleToggleSubtask = async (subtask: Subtask) => {
-    const { error } = await supabase
-      .from('subtasks')
-      .update({ 
-        completed: !subtask.completed,
-        completed_at: !subtask.completed ? new Date().toISOString() : null
-      })
-      .eq('id', subtask.id);
-
-    if (error) {
-      console.error('Error toggling subtask:', error);
-    } else {
-      if (selectedTask) {
-        fetchSubtasks(selectedTask.id);
-      }
-    }
-  };
-
   const handleDeleteTask = async (taskId: string) => {
-    if (!confirm('このタスクを削除しますか？サブタスクもすべて削除されます。')) {
+    if (!confirm('このタスクを削除しますか？')) {
       return;
     }
 
-    // サブタスクを先に削除
     const { error: subtaskError } = await supabase
       .from('subtasks')
       .delete()
@@ -185,11 +136,9 @@ export default function Home() {
 
     if (subtaskError) {
       console.error('Error deleting subtasks:', subtaskError);
-      alert('サブタスクの削除に失敗しました');
       return;
     }
 
-    // タスクを削除
     const { error } = await supabase
       .from('tasks')
       .delete()
@@ -197,62 +146,42 @@ export default function Home() {
 
     if (error) {
       console.error('Error deleting task:', error);
-      alert('タスクの削除に失敗しました');
     } else {
       setSelectedTask(null);
       fetchTasks();
     }
   };
 
-  const handleDeleteSubtask = async (subtaskId: string) => {
-    if (!confirm('このサブタスクを削除しますか？')) {
-      return;
-    }
-
-    const { error } = await supabase
-      .from('subtasks')
-      .delete()
-      .eq('id', subtaskId);
-
-    if (error) {
-      console.error('Error deleting subtask:', error);
-      alert('サブタスクの削除に失敗しました');
-    } else {
-      if (selectedTask) {
-        fetchSubtasks(selectedTask.id);
-      }
-    }
-  };
-
-  // ヘルパー関数
+  // Monday.com風のカラーパレット
   const getBusinessColor = (businessType?: string) => {
     switch (businessType) {
       case '不動産': return '#00C875';
       case '人材': return '#0073EA';
       case '結婚相談所': return '#FF3D57';
       case 'コーポレート': return '#FDAB3D';
+      case '経済圏': return '#9CD326';
       default: return '#6C3CE1';
-    }
-  };
-
-  const priorityColor = (priority?: string) => {
-    switch (priority) {
-      case '今すぐやる': return 'bg-red-500 text-white';
-      case '今週やる': return 'bg-orange-500 text-white';
-      case '今月やる': return 'bg-yellow-500 text-white';
-      case '高': return 'bg-pink-500 text-white';
-      case '中': return 'bg-blue-500 text-white';
-      case '低': return 'bg-gray-400 text-white';
-      default: return 'bg-gray-300 text-gray-700';
     }
   };
 
   const statusColor = (status: string) => {
     switch (status) {
-      case '未着手': return 'bg-gray-100 text-gray-700 border-gray-300';
-      case '進行中': return 'bg-blue-100 text-blue-700 border-blue-300';
-      case '完了': return 'bg-green-100 text-green-700 border-green-300';
-      default: return 'bg-gray-100 text-gray-700 border-gray-300';
+      case '未着手': return { bg: '#C4C4C4', text: '#ffffff' };
+      case '進行中': return { bg: '#0073EA', text: '#ffffff' };
+      case '完了': return { bg: '#00C875', text: '#ffffff' };
+      default: return { bg: '#C4C4C4', text: '#ffffff' };
+    }
+  };
+
+  const priorityEmoji = (priority?: string) => {
+    switch (priority) {
+      case '今すぐやる': return '🔥';
+      case '今週やる': return '⚡';
+      case '今月やる': return '📅';
+      case '高': return '🔴';
+      case '中': return '🟡';
+      case '低': return '🟢';
+      default: return '⚪';
     }
   };
 
@@ -265,411 +194,340 @@ export default function Home() {
     return dueDate < today;
   };
 
-  const isToday = (task: Task) => {
-    if (!task.due_date) return false;
-    const today = new Date();
-    const dueDate = new Date(task.due_date);
-    return today.toDateString() === dueDate.toDateString();
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return '-';
+    const date = new Date(dateString);
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    return `${month}/${day}`;
   };
 
   // グループ化
   const groupedTasks = {
-    '🔥 今すぐやる': tasks.filter(t => t.priority === '今すぐやる'),
-    '⚡ 今週やる': tasks.filter(t => t.priority === '今週やる'),
-    '📅 今月やる': tasks.filter(t => t.priority === '今月やる'),
-    '📋 その他': tasks.filter(t => !['今すぐやる', '今週やる', '今月やる'].includes(t.priority || ''))
+    '🔥 今すぐやる': tasks.filter(t => t.priority === '今すぐやる' && t.status !== '完了'),
+    '⚡ 今週やる': tasks.filter(t => t.priority === '今週やる' && t.status !== '完了'),
+    '📅 今月やる': tasks.filter(t => t.priority === '今月やる' && t.status !== '完了'),
+    '📋 その他': tasks.filter(t => !['今すぐやる', '今週やる', '今月やる'].includes(t.priority || '') && t.status !== '完了'),
+    '✅ 完了': tasks.filter(t => t.status === '完了')
+  };
+
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+
+  const toggleGroup = (groupName: string) => {
+    setCollapsedGroups(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(groupName)) {
+        newSet.delete(groupName);
+      } else {
+        newSet.add(groupName);
+      }
+      return newSet;
+    });
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* 通知許可プロンプト */}
-      <NotificationPrompt />
-      
-      {/* ヘッダー（固定） */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
-        <div className="px-4 py-3">
-          <h1 className="text-2xl font-bold text-gray-900 mb-3 flex items-center gap-2">
-            <span className="emoji">📋</span>
-            <span>タスク管理</span>
-          </h1>
-          
-          {/* フィルター */}
-          <div className="flex gap-3 mb-3">
+    <div className="flex h-screen bg-gray-50">
+      {/* 左サイドバー（Monday.com風） */}
+      {sidebarOpen && (
+        <div className="w-64 bg-white border-r border-gray-200 flex flex-col">
+          {/* ロゴ */}
+          <div className="p-4 border-b border-gray-200">
+            <h1 className="text-xl font-bold text-gray-900">タスク管理</h1>
+          </div>
+
+          {/* ナビゲーション */}
+          <div className="flex-1 p-4 space-y-2">
             <button
               onClick={() => setFilter('all')}
-              className={`btn-filter flex-1 ${
-                filter === 'all' ? 'btn-filter-active' : 'btn-filter-inactive'
+              className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                filter === 'all' ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-50'
               }`}
             >
-              すべて
+              📋 すべてのタスク
             </button>
             <button
               onClick={() => setFilter('個人')}
-              className={`btn-filter flex-1 ${
-                filter === '個人' ? 'btn-filter-active' : 'btn-filter-inactive'
+              className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                filter === '個人' ? 'bg-purple-50 text-purple-600' : 'text-gray-700 hover:bg-gray-50'
               }`}
             >
-              個人
+              👤 個人タスク
             </button>
             <button
               onClick={() => setFilter('事業')}
-              className={`btn-filter flex-1 ${
-                filter === '事業' ? 'btn-filter-active' : 'btn-filter-inactive'
+              className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                filter === '事業' ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-50'
               }`}
             >
-              事業
+              🏢 事業タスク
             </button>
           </div>
 
-          {/* アクションボタン */}
-          <div className="flex flex-col gap-2">
-            <button
-              onClick={async () => {
-                if (!confirm('全タスクにAI提案を一括生成しますか？')) return;
-                
-                try {
-                  const response = await fetch('/api/ai-suggestion', {
-                    method: 'PUT'
-                  });
-                  const data = await response.json();
-                  if (data.success) {
-                    alert(`${data.count}個のタスクにAI提案を生成しました！`);
-                    fetchTasks();
-                  }
-                } catch (error) {
-                  console.error('Error batch generating AI suggestions:', error);
-                  alert('AI提案の一括生成に失敗しました');
-                }
-              }}
-              className="btn-primary w-full flex items-center justify-center gap-2 bg-blue-600 active:bg-blue-700"
-            >
-              <span className="emoji">✨</span>
-              <span className="text-sm">AI提案を一括生成</span>
-            </button>
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="btn-primary w-full flex items-center justify-center gap-2"
-            >
-              <span className="emoji">+</span>
-              <span className="text-sm">タスク追加</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* タスクリスト */}
-      {loading ? (
-        <div className="flex justify-center items-center py-12">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div>
-        </div>
-      ) : (
-        <div className="px-4 py-4 space-y-6 pb-20">
-          {Object.entries(groupedTasks).map(([groupName, groupTasks]) => {
-            if (groupTasks.length === 0) return null;
-            
-            return (
-              <div key={groupName}>
-                <div className="task-group-header">
-                  <h3 className="task-group-title">{groupName}</h3>
-                  <span className="task-group-count">{groupTasks.length}</span>
-                </div>
-                
-                <div className="space-y-3">
-                  {groupTasks.map((task) => (
-                    <div
-                      key={task.id}
-                      onClick={() => setSelectedTask(task)}
-                      className="task-card"
-                      style={{ borderLeftColor: getBusinessColor(task.category === '個人' ? undefined : task.business_type) }}
-                    >
-                      {/* タスク名 */}
-                      <h4 className={`task-title ${isOverdue(task) ? 'task-title-overdue' : 'text-gray-900'}`}>
-                        {task.title}
-                      </h4>
-
-                      {/* バッジ群 */}
-                      <div className="badge-container">
-                        {task.priority && (
-                          <span className={`status-badge ${priorityColor(task.priority)}`}>
-                            {task.priority}
-                          </span>
-                        )}
-                        
-                        {task.category === '事業' && task.business_type && (
-                          <span 
-                            className="status-badge text-white"
-                            style={{ backgroundColor: getBusinessColor(task.business_type) }}
-                          >
-                            {task.business_type}
-                          </span>
-                        )}
-
-                        <span className={`status-badge ${statusColor(task.status)}`}>
-                          {task.status}
-                        </span>
-                      </div>
-
-                      {/* 期限 */}
-                      {task.due_date && (
-                        <div className={`text-xs flex items-center gap-1 ${
-                          isOverdue(task) ? 'text-red-600 font-bold' : 
-                          isToday(task) ? 'text-blue-600 font-medium' : 
-                          'text-gray-500'
-                        }`}>
-                          <span className="emoji-sm">📅</span> 
-                          <span>{new Date(task.due_date).toLocaleDateString('ja-JP')}</span>
-                          {isOverdue(task) && <span> ⚠️ 期限切れ</span>}
-                          {isToday(task) && <span> 今日</span>}
-                        </div>
-                      )}
-
-                      {/* AI提案プレビュー */}
-                      {task.ai_suggestion && (
-                        <div className="mt-2 text-xs text-blue-700 bg-blue-50 px-2 py-1 rounded flex items-start gap-1">
-                          <span className="emoji-sm">💡</span>
-                          <span>{task.ai_suggestion.substring(0, 50)}{task.ai_suggestion.length > 50 ? '...' : ''}</span>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-          
-          {tasks.length === 0 && (
-            <div className="text-center py-12 text-gray-500">
-              <p className="text-lg mb-2">📭</p>
-              <p>タスクがありません</p>
+          {/* フッター */}
+          <div className="p-4 border-t border-gray-200">
+            <div className="text-xs text-gray-500">
+              {tasks.length}個のタスク
             </div>
-          )}
+          </div>
         </div>
       )}
 
-      {/* タスク詳細パネル（全画面） */}
-      {selectedTask && (
-        <div className="detail-panel">
-          {/* ヘッダー */}
-          <div className="header-sticky px-4 py-3">
-            <div className="flex items-center justify-between">
+      {/* メインコンテンツ */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* 上部ツールバー（Monday.com風） */}
+        <div className="bg-white border-b border-gray-200 px-6 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
               <button
-                onClick={() => setSelectedTask(null)}
-                className="text-[var(--primary)] font-medium text-lg touch-target flex items-center gap-1"
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="text-gray-500 hover:text-gray-700"
               >
-                <span className="emoji">←</span>
-                <span>戻る</span>
+                ☰
               </button>
-              <h2 className="text-xl font-semibold text-gray-900">詳細</h2>
-              <div className="w-12" />
+              <h2 className="text-lg font-semibold text-gray-900">
+                {filter === 'all' ? 'すべてのタスク' : filter === '個人' ? '個人タスク' : '事業タスク'}
+              </h2>
             </div>
+
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+            >
+              + タスク追加
+            </button>
           </div>
+        </div>
 
-          {/* コンテンツ */}
-          <div className="p-4 space-y-6">
-            {/* タイトル */}
-            <div>
-              <input
-                type="text"
-                value={selectedTask.title}
-                onChange={(e) => setSelectedTask({ ...selectedTask, title: e.target.value })}
-                onBlur={() => handleUpdateField(selectedTask.id, 'title', selectedTask.title)}
-                className="text-xl font-bold text-gray-900 mb-4 w-full border-0 border-b-2 border-transparent hover:border-gray-300 focus:border-indigo-500 outline-none"
-              />
-              
-              <div className="flex flex-wrap gap-2">
-                <select
-                  value={selectedTask.category}
-                  onChange={(e) => handleUpdateField(selectedTask.id, 'category', e.target.value)}
-                  className={`px-3 py-1.5 rounded-full text-sm font-medium cursor-pointer ${
-                    selectedTask.category === '個人' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
-                  }`}
-                >
-                  <option value="個人">個人</option>
-                  <option value="事業">事業</option>
-                </select>
-
-                {selectedTask.category === '事業' && (
-                  <select
-                    value={selectedTask.business_type || ''}
-                    onChange={(e) => handleUpdateField(selectedTask.id, 'business_type', e.target.value || undefined)}
-                    className="px-3 py-1.5 rounded-full text-sm font-medium text-white cursor-pointer"
-                    style={{ backgroundColor: getBusinessColor(selectedTask.business_type) }}
-                  >
-                    <option value="">事業種別</option>
-                    <option value="不動産">不動産</option>
-                    <option value="人材">人材</option>
-                    <option value="経済圏">経済圏</option>
-                    <option value="結婚相談所">結婚相談所</option>
-                    <option value="コーポレート">コーポレート</option>
-                    <option value="その他">その他</option>
-                  </select>
-                )}
-              </div>
+        {/* テーブルビュー */}
+        <div className="flex-1 overflow-auto">
+          {loading ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
             </div>
-
-            {/* 優先度・ステータス */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">優先度</label>
-                <select
-                  value={selectedTask.priority || ''}
-                  onChange={(e) => handleUpdateField(selectedTask.id, 'priority', e.target.value || undefined)}
-                  className={`w-full px-4 py-3 min-h-[48px] rounded-md text-sm font-medium cursor-pointer transition-all ${priorityColor(selectedTask.priority)}`}
-                >
-                  <option value="">優先度なし</option>
-                  <option value="今すぐやる">今すぐやる</option>
-                  <option value="今週やる">今週やる</option>
-                  <option value="今月やる">今月やる</option>
-                  <option value="高">高</option>
-                  <option value="中">中</option>
-                  <option value="低">低</option>
-                </select>
+          ) : (
+            <div className="bg-white">
+              {/* テーブルヘッダー */}
+              <div className="grid grid-cols-12 gap-4 px-6 py-3 bg-[#F6F7FB] border-b border-gray-200 font-semibold text-xs text-gray-600 uppercase tracking-wider sticky top-0 z-10">
+                <div className="col-span-5">タスク</div>
+                <div className="col-span-2 text-center">期限</div>
+                <div className="col-span-2 text-center">カテゴリ</div>
+                <div className="col-span-2 text-center">ステータス</div>
+                <div className="col-span-1 text-center">優先度</div>
               </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">ステータス</label>
-                <select
-                  value={selectedTask.status}
-                  onChange={(e) => handleUpdateField(selectedTask.id, 'status', e.target.value)}
-                  className={`w-full px-4 py-3 min-h-[48px] rounded-md text-sm font-medium border transition-all ${statusColor(selectedTask.status)} cursor-pointer`}
-                >
-                  <option value="未着手">未着手</option>
-                  <option value="進行中">進行中</option>
-                  <option value="完了">完了</option>
-                </select>
-              </div>
-            </div>
+              {/* グループごとのテーブル */}
+              {Object.entries(groupedTasks).map(([groupName, groupTasks]) => {
+                if (groupTasks.length === 0) return null;
+                const isCollapsed = collapsedGroups.has(groupName);
 
-            {/* 期限 */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">期限</label>
-              <input
-                type="date"
-                value={selectedTask.due_date ? selectedTask.due_date.split('T')[0] : ''}
-                onChange={(e) => handleUpdateField(selectedTask.id, 'due_date', e.target.value || null)}
-                className={`w-full px-3 py-2 border rounded-lg ${
-                  isOverdue(selectedTask) ? 'border-red-500 bg-red-50' : 'border-gray-300 bg-white'
-                }`}
-              />
-              {isOverdue(selectedTask) && (
-                <p className="text-xs text-red-600 mt-1">⚠️ 期限を過ぎています</p>
-              )}
-            </div>
+                return (
+                  <div key={groupName} className="border-b border-gray-200">
+                    {/* グループヘッダー */}
+                    <div
+                      className="px-6 py-3 bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors flex items-center justify-between"
+                      onClick={() => toggleGroup(groupName)}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-400 transition-transform" style={{ transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)' }}>
+                          ▼
+                        </span>
+                        <span className="font-semibold text-gray-900">{groupName}</span>
+                        <span className="text-xs text-gray-500">({groupTasks.length})</span>
+                      </div>
+                    </div>
 
-            {/* 説明 */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">説明</label>
-              <textarea
-                value={selectedTask.description || ''}
-                onChange={(e) => setSelectedTask({ ...selectedTask, description: e.target.value })}
-                onBlur={() => handleUpdateField(selectedTask.id, 'description', selectedTask.description)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-600 bg-gray-50"
-                rows={4}
-                placeholder="詳細な説明を入力..."
-              />
-            </div>
+                    {/* グループのタスク */}
+                    {!isCollapsed && groupTasks.map((task) => {
+                      const colors = statusColor(task.status);
+                      const overdueStyle = isOverdue(task) ? 'bg-red-50' : '';
 
-            {/* AI提案 */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-sm font-semibold text-gray-700">AI提案</label>
-                <button
-                  onClick={async () => {
-                    try {
-                      const response = await fetch('/api/ai-suggestion', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ taskId: selectedTask.id })
-                      });
-                      const data = await response.json();
-                      if (data.success) {
-                        setSelectedTask({ ...selectedTask, ai_suggestion: data.ai_suggestion });
-                        fetchTasks();
-                      }
-                    } catch (error) {
-                      console.error('Error generating AI suggestion:', error);
-                      alert('AI提案の生成に失敗しました');
-                    }
-                  }}
-                  className="text-sm px-4 py-2.5 min-h-[44px] bg-blue-600 text-white rounded-lg font-medium transition-all duration-150 active:scale-95 active:bg-blue-700 flex items-center gap-2"
-                >
-                  <span className="emoji-sm">✨</span>
-                  <span>{selectedTask.ai_suggestion ? '再生成' : 'AI提案を生成'}</span>
-                </button>
-              </div>
-              {selectedTask.ai_suggestion && (
-                <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded">
-                  <p className="text-sm text-blue-900 flex items-start gap-2">
-                    <span className="emoji-sm">💡</span>
-                    <span><span className="font-semibold">最初の一歩:</span> {selectedTask.ai_suggestion}</span>
-                  </p>
+                      return (
+                        <div
+                          key={task.id}
+                          className={`grid grid-cols-12 gap-4 px-6 py-4 border-b border-gray-100 hover:bg-gray-50 transition-colors ${overdueStyle}`}
+                        >
+                          {/* タスク名 */}
+                          <div className="col-span-5 flex items-center gap-2">
+                            <div
+                              className="w-1 h-8 rounded-full"
+                              style={{ backgroundColor: getBusinessColor(task.category === '個人' ? undefined : task.business_type) }}
+                            />
+                            <button
+                              onClick={() => setSelectedTask(task)}
+                              className="text-left font-medium text-gray-900 hover:text-blue-600 transition-colors"
+                            >
+                              {task.title}
+                            </button>
+                          </div>
+
+                          {/* 期限 */}
+                          <div className="col-span-2 flex items-center justify-center">
+                            <input
+                              type="date"
+                              value={task.due_date ? task.due_date.split('T')[0] : ''}
+                              onChange={(e) => handleUpdateField(task.id, 'due_date', e.target.value || null)}
+                              className={`px-2 py-1 text-sm rounded border ${
+                                isOverdue(task) ? 'border-red-500 text-red-600 font-semibold' : 'border-gray-300 text-gray-700'
+                              }`}
+                            />
+                          </div>
+
+                          {/* カテゴリ */}
+                          <div className="col-span-2 flex items-center justify-center">
+                            {task.category === '事業' && task.business_type ? (
+                              <span
+                                className="px-3 py-1 rounded-full text-xs font-medium text-white"
+                                style={{ backgroundColor: getBusinessColor(task.business_type) }}
+                              >
+                                {task.business_type}
+                              </span>
+                            ) : (
+                              <span className="px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
+                                {task.category}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* ステータス */}
+                          <div className="col-span-2 flex items-center justify-center">
+                            <select
+                              value={task.status}
+                              onChange={(e) => handleUpdateField(task.id, 'status', e.target.value)}
+                              className="px-3 py-1 rounded text-xs font-medium cursor-pointer border-0 outline-none"
+                              style={{ backgroundColor: colors.bg, color: colors.text }}
+                            >
+                              <option value="未着手">未着手</option>
+                              <option value="進行中">進行中</option>
+                              <option value="完了">完了</option>
+                            </select>
+                          </div>
+
+                          {/* 優先度 */}
+                          <div className="col-span-1 flex items-center justify-center">
+                            <span className="text-lg">{priorityEmoji(task.priority)}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                    {/* Add Item ボタン */}
+                    {!isCollapsed && (
+                      <div className="px-6 py-3">
+                        <button
+                          onClick={() => setShowAddModal(true)}
+                          className="text-sm text-gray-500 hover:text-gray-700 font-medium"
+                        >
+                          + アイテムを追加
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+
+              {tasks.length === 0 && (
+                <div className="text-center py-12 text-gray-500">
+                  <p className="text-lg mb-2">📭</p>
+                  <p>タスクがありません</p>
                 </div>
               )}
             </div>
+          )}
+        </div>
+      </div>
 
-            {/* サブタスク */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-3">
-                サブタスク ({subtasks.length})
-              </label>
-              <div className="space-y-2 mb-3">
-                {subtasks.map((subtask) => (
-                  <div key={subtask.id} className="flex items-center gap-2">
-                    <label className="interactive-label flex-1">
-                      <input
-                        type="checkbox"
-                        checked={subtask.completed}
-                        onChange={() => handleToggleSubtask(subtask)}
-                      />
-                      <span className={`flex-1 text-sm ${subtask.completed ? 'line-through text-gray-400' : 'text-gray-700'}`}>
-                        {subtask.title}
-                      </span>
-                    </label>
-                    <button
-                      onClick={() => handleDeleteSubtask(subtask.id)}
-                      className="text-red-500 hover:text-red-700 px-2 py-1 text-sm"
-                      aria-label="サブタスクを削除"
-                    >
-                      🗑️
-                    </button>
-                  </div>
-                ))}
-              </div>
-              <div className="flex gap-2">
+      {/* タスク詳細パネル */}
+      {selectedTask && (
+        <div className="fixed right-0 top-0 bottom-0 w-[500px] bg-white shadow-2xl z-50 overflow-y-auto border-l border-gray-200">
+          <div className="p-6">
+            <div className="flex items-start justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">タスク詳細</h2>
+              <button
+                onClick={() => setSelectedTask(null)}
+                className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              {/* タイトル */}
+              <div>
                 <input
                   type="text"
-                  value={newSubtaskTitle}
-                  onChange={(e) => setNewSubtaskTitle(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleAddSubtask()}
-                  placeholder="サブタスクを追加..."
-                  className="flex-1 px-3 py-2 min-h-[44px] border border-gray-300 rounded-lg text-sm"
+                  value={selectedTask.title}
+                  onChange={(e) => setSelectedTask({ ...selectedTask, title: e.target.value })}
+                  onBlur={() => handleUpdateField(selectedTask.id, 'title', selectedTask.title)}
+                  className="text-xl font-bold text-gray-900 mb-4 w-full border-0 border-b-2 border-transparent hover:border-gray-300 focus:border-blue-500 outline-none"
                 />
+              </div>
+
+              {/* ステータス・優先度 */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">ステータス</label>
+                  <select
+                    value={selectedTask.status}
+                    onChange={(e) => handleUpdateField(selectedTask.id, 'status', e.target.value)}
+                    className="w-full px-3 py-2 rounded border border-gray-300"
+                  >
+                    <option value="未着手">未着手</option>
+                    <option value="進行中">進行中</option>
+                    <option value="完了">完了</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">優先度</label>
+                  <select
+                    value={selectedTask.priority || ''}
+                    onChange={(e) => handleUpdateField(selectedTask.id, 'priority', e.target.value || undefined)}
+                    className="w-full px-3 py-2 rounded border border-gray-300"
+                  >
+                    <option value="">なし</option>
+                    <option value="今すぐやる">今すぐやる</option>
+                    <option value="今週やる">今週やる</option>
+                    <option value="今月やる">今月やる</option>
+                    <option value="高">高</option>
+                    <option value="中">中</option>
+                    <option value="低">低</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* 期限 */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">期限</label>
+                <input
+                  type="date"
+                  value={selectedTask.due_date ? selectedTask.due_date.split('T')[0] : ''}
+                  onChange={(e) => handleUpdateField(selectedTask.id, 'due_date', e.target.value || null)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded"
+                />
+              </div>
+
+              {/* 説明 */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">説明</label>
+                <textarea
+                  value={selectedTask.description || ''}
+                  onChange={(e) => setSelectedTask({ ...selectedTask, description: e.target.value })}
+                  onBlur={() => handleUpdateField(selectedTask.id, 'description', selectedTask.description)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded"
+                  rows={4}
+                  placeholder="詳細な説明を入力..."
+                />
+              </div>
+
+              {/* 削除ボタン */}
+              <div className="border-t pt-4">
                 <button
-                  onClick={handleAddSubtask}
-                  className="px-4 py-2 min-h-[44px] bg-indigo-600 text-white rounded-lg active:bg-indigo-700 text-sm font-medium transition-all duration-150 active:scale-95"
+                  onClick={() => handleDeleteTask(selectedTask.id)}
+                  className="w-full px-4 py-3 bg-red-50 text-red-600 rounded-lg font-medium hover:bg-red-100"
                 >
-                  追加
+                  🗑️ このタスクを削除
                 </button>
               </div>
-            </div>
-
-            {/* 作成日 */}
-            <div className="text-xs text-gray-500 bg-gray-50 p-3 rounded">
-              作成日: {new Date(selectedTask.created_at).toLocaleString('ja-JP')}
-              {selectedTask.completed_at && (
-                <><br/>完了日: {new Date(selectedTask.completed_at).toLocaleString('ja-JP')}</>
-              )}
-            </div>
-
-            {/* タスク削除ボタン */}
-            <div className="border-t pt-4">
-              <button
-                onClick={() => handleDeleteTask(selectedTask.id)}
-                className="w-full px-4 py-3 bg-red-50 text-red-600 rounded-lg font-medium hover:bg-red-100 active:bg-red-200 transition-all duration-150 active:scale-95 flex items-center justify-center gap-2"
-              >
-                <span>🗑️</span>
-                <span>このタスクを削除</span>
-              </button>
             </div>
           </div>
         </div>
@@ -677,9 +535,9 @@ export default function Home() {
 
       {/* タスク追加モーダル */}
       {showAddModal && (
-        <div className="modal-backdrop flex items-end">
-          <div className="modal-content">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">新しいタスクを追加</h2>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full p-8 max-h-[90vh] overflow-y-auto">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">新しいタスクを追加</h2>
             
             <div className="space-y-4">
               <div>
@@ -777,18 +635,18 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="flex flex-col gap-3 mt-6">
-              <button
-                onClick={handleAddTask}
-                className="btn-primary w-full"
-              >
-                追加する
-              </button>
+            <div className="flex gap-4 mt-6">
               <button
                 onClick={() => setShowAddModal(false)}
-                className="btn-secondary w-full"
+                className="flex-1 px-6 py-3 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200"
               >
                 キャンセル
+              </button>
+              <button
+                onClick={handleAddTask}
+                className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700"
+              >
+                追加する
               </button>
             </div>
           </div>
