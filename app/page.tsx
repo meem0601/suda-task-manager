@@ -152,24 +152,27 @@ export default function Home() {
     }
   };
 
-  // Monday.com風のカラーパレット
+  // Business Color Mapping
   const getBusinessColor = (businessType?: string) => {
     switch (businessType) {
-      case '不動産': return '#00C875';
-      case '人材': return '#0073EA';
-      case '結婚相談所': return '#FF3D57';
-      case 'コーポレート': return '#FDAB3D';
-      case '経済圏': return '#9CD326';
-      default: return '#6C3CE1';
+      case '不動産': return '#00c875';
+      case '人材': return '#0073ea';
+      case '結婚相談所': return '#ff3d57';
+      case 'コーポレート': return '#fdab3d';
+      case '経済圏': return '#9cd326';
+      default: return '#a855f7';
     }
   };
 
-  const statusColor = (status: string) => {
-    switch (status) {
-      case '未着手': return { bg: '#C4C4C4', text: '#ffffff' };
-      case '進行中': return { bg: '#0073EA', text: '#ffffff' };
-      case '完了': return { bg: '#00C875', text: '#ffffff' };
-      default: return { bg: '#C4C4C4', text: '#ffffff' };
+  const getAccentClass = (businessType?: string, isPersonal?: boolean) => {
+    if (isPersonal) return 'accent-personal';
+    switch (businessType) {
+      case '不動産': return 'accent-fudosan';
+      case '人材': return 'accent-jinzai';
+      case '結婚相談所': return 'accent-kekkon';
+      case 'コーポレート': return 'accent-corporate';
+      case '経済圏': return 'accent-keizai';
+      default: return 'accent-personal';
     }
   };
 
@@ -211,7 +214,7 @@ export default function Home() {
     '✅ 完了': tasks.filter(t => t.status === '完了')
   };
 
-  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set(['✅ 完了']));
 
   const toggleGroup = (groupName: string) => {
     setCollapsedGroups(prev => {
@@ -226,47 +229,79 @@ export default function Home() {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      {/* 左サイドバー（Monday.com風） - デスクトップのみ */}
+    <div className="flex h-screen bg-neutral-50">
+      {/* 左サイドバー - デスクトップのみ */}
       {sidebarOpen && (
-        <div className="hidden md:flex w-64 bg-white border-r border-gray-200 flex-col">
+        <div className="sidebar hidden md:flex">
           {/* ロゴ */}
-          <div className="p-4 border-b border-gray-200">
-            <h1 className="text-xl font-bold text-gray-900">タスク管理</h1>
+          <div className="p-6 border-b border-neutral-200">
+            <h1 className="text-xl font-bold text-neutral-900">タスク管理</h1>
+            <p className="text-xs text-neutral-500 mt-1">須田 專用</p>
           </div>
 
           {/* ナビゲーション */}
-          <div className="flex-1 p-4 space-y-2">
+          <div className="flex-1 p-4 space-y-1">
             <button
               onClick={() => setFilter('all')}
-              className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                filter === 'all' ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-50'
-              }`}
+              className={`sidebar-item ${filter === 'all' ? 'sidebar-item-active' : ''}`}
             >
-              📋 すべてのタスク
+              <span className="text-base">📋</span>
+              <span>すべてのタスク</span>
+              <span className="ml-auto text-xs text-neutral-500">{tasks.length}</span>
             </button>
             <button
               onClick={() => setFilter('個人')}
-              className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                filter === '個人' ? 'bg-purple-50 text-purple-600' : 'text-gray-700 hover:bg-gray-50'
-              }`}
+              className={`sidebar-item ${filter === '個人' ? 'sidebar-item-active' : ''}`}
             >
-              👤 個人タスク
+              <span className="text-base">👤</span>
+              <span>個人タスク</span>
+              <span className="ml-auto text-xs text-neutral-500">
+                {tasks.filter(t => t.category === '個人').length}
+              </span>
             </button>
             <button
               onClick={() => setFilter('事業')}
-              className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                filter === '事業' ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-50'
-              }`}
+              className={`sidebar-item ${filter === '事業' ? 'sidebar-item-active' : ''}`}
             >
-              🏢 事業タスク
+              <span className="text-base">🏢</span>
+              <span>事業タスク</span>
+              <span className="ml-auto text-xs text-neutral-500">
+                {tasks.filter(t => t.category === '事業').length}
+              </span>
             </button>
+
+            <div className="divider" />
+
+            <div className="px-3 py-2 text-xs font-semibold text-neutral-600 uppercase tracking-wider">
+              事業別
+            </div>
+            
+            {['不動産', '人材', '結婚相談所', 'コーポレート', '経済圏'].map(business => {
+              const count = tasks.filter(t => t.business_type === business).length;
+              if (count === 0) return null;
+              
+              return (
+                <button
+                  key={business}
+                  onClick={() => setFilter('事業')}
+                  className="sidebar-item flex items-center gap-2"
+                >
+                  <div
+                    className="w-3 h-3 rounded-full"
+                    style={{ backgroundColor: getBusinessColor(business) }}
+                  />
+                  <span>{business}</span>
+                  <span className="ml-auto text-xs text-neutral-500">{count}</span>
+                </button>
+              );
+            })}
           </div>
 
           {/* フッター */}
-          <div className="p-4 border-t border-gray-200">
-            <div className="text-xs text-gray-500">
-              {tasks.length}個のタスク
+          <div className="p-4 border-t border-neutral-200">
+            <div className="flex items-center gap-2 text-sm text-neutral-600">
+              <div className="w-2 h-2 rounded-full bg-success-500 animate-pulse-soft" />
+              <span>{tasks.filter(t => t.status !== '完了').length}個のアクティブタスク</span>
             </div>
           </div>
         </div>
@@ -274,45 +309,48 @@ export default function Home() {
 
       {/* メインコンテンツ */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* 上部ツールバー（Monday.com風） */}
-        <div className="bg-white border-b border-gray-200 px-4 md:px-6 py-3">
-          <div className="flex items-center justify-between flex-wrap gap-2">
-            <div className="flex items-center gap-2 md:gap-4">
-              {/* サイドバー開閉（PCのみ） */}
+        {/* 上部ツールバー */}
+        <div className="bg-white border-b border-neutral-200 px-4 md:px-6 py-4 shadow-sm">
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div className="flex items-center gap-3 md:gap-4">
+              {/* サイドバー開閉 */}
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="hidden md:block text-gray-500 hover:text-gray-700"
+                className="hidden md:flex btn-ghost p-2 rounded-lg hover:bg-neutral-100 transition-colors"
+                aria-label="Toggle sidebar"
               >
-                ☰
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
               </button>
-              <h2 className="text-lg md:text-xl font-semibold text-gray-900">
-                {filter === 'all' ? 'すべてのタスク' : filter === '個人' ? '個人タスク' : '事業タスク'}
-              </h2>
+              
+              <div>
+                <h2 className="text-lg md:text-xl font-semibold text-neutral-900">
+                  {filter === 'all' ? 'すべてのタスク' : filter === '個人' ? '個人タスク' : '事業タスク'}
+                </h2>
+                <p className="text-xs text-neutral-500 mt-0.5">
+                  {new Date().toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' })}
+                </p>
+              </div>
             </div>
 
             {/* モバイル用フィルタ */}
-            <div className="flex md:hidden gap-1">
+            <div className="flex md:hidden gap-2">
               <button
                 onClick={() => setFilter('all')}
-                className={`px-3 py-1 rounded text-xs font-medium ${
-                  filter === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'
-                }`}
+                className={`btn-sm ${filter === 'all' ? 'btn-primary' : 'btn-secondary'}`}
               >
                 すべて
               </button>
               <button
                 onClick={() => setFilter('個人')}
-                className={`px-3 py-1 rounded text-xs font-medium ${
-                  filter === '個人' ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-700'
-                }`}
+                className={`btn-sm ${filter === '個人' ? 'btn-primary' : 'btn-secondary'}`}
               >
                 個人
               </button>
               <button
                 onClick={() => setFilter('事業')}
-                className={`px-3 py-1 rounded text-xs font-medium ${
-                  filter === '事業' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'
-                }`}
+                className={`btn-sm ${filter === '事業' ? 'btn-primary' : 'btn-secondary'}`}
               >
                 事業
               </button>
@@ -320,10 +358,13 @@ export default function Home() {
 
             <button
               onClick={() => setShowAddModal(true)}
-              className="btn btn-primary text-xs md:text-sm"
+              className="btn btn-primary"
             >
-              <span className="text-lg">+</span>
-              <span>タスク追加</span>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              <span className="hidden md:inline">タスク追加</span>
+              <span className="md:hidden">追加</span>
             </button>
           </div>
         </div>
@@ -332,12 +373,12 @@ export default function Home() {
         <div className="hidden md:flex flex-1 overflow-auto">
           {loading ? (
             <div className="flex items-center justify-center h-full w-full">
-              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+              <div className="spinner spinner-lg" />
             </div>
           ) : (
             <div className="bg-white overflow-x-auto w-full">
               {/* テーブルヘッダー */}
-              <div className="grid grid-cols-12 gap-4 px-6 py-3 bg-[#F6F7FB] border-b border-gray-200 font-semibold text-xs text-gray-600 uppercase tracking-wider sticky top-0 z-10">
+              <div className="grid grid-cols-12 gap-4 table-header">
                 <div className="col-span-5">タスク</div>
                 <div className="col-span-2 text-center">期限</div>
                 <div className="col-span-2 text-center">カテゴリ</div>
@@ -351,80 +392,81 @@ export default function Home() {
                 const isCollapsed = collapsedGroups.has(groupName);
 
                 return (
-                  <div key={groupName} className="border-b border-gray-200">
+                  <div key={groupName} className="border-b border-neutral-200">
                     {/* グループヘッダー */}
                     <div
-                      className="px-6 py-3 bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors flex items-center justify-between"
+                      className="group-header"
                       onClick={() => toggleGroup(groupName)}
                     >
-                      <div className="flex items-center gap-2">
-                        <span className="text-gray-400 transition-transform" style={{ transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)' }}>
+                      <div className="group-header-title">
+                        <span 
+                          className="group-collapse-icon"
+                          style={{ transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)' }}
+                        >
                           ▼
                         </span>
-                        <span className="font-semibold text-gray-900">{groupName}</span>
-                        <span className="text-xs text-gray-500">({groupTasks.length})</span>
+                        <span>{groupName}</span>
+                        <span className="badge badge-neutral">{groupTasks.length}</span>
                       </div>
                     </div>
 
                     {/* グループのタスク */}
                     {!isCollapsed && groupTasks.map((task) => {
-                      const colors = statusColor(task.status);
-                      const overdueStyle = isOverdue(task) ? 'bg-red-50' : '';
+                      const overdueClass = isOverdue(task) ? 'bg-danger-50 border-l-4 border-l-danger-500' : '';
 
                       return (
                         <div
                           key={task.id}
-                          className={`grid grid-cols-12 gap-4 px-6 py-4 border-b border-gray-100 hover:bg-gray-50 transition-colors ${overdueStyle}`}
+                          className={`table-row grid grid-cols-12 gap-4 ${overdueClass}`}
                         >
                           {/* タスク名 */}
-                          <div className="col-span-5 flex items-center gap-2">
-                            <div
-                              className="w-1 h-8 rounded-full"
-                              style={{ backgroundColor: getBusinessColor(task.category === '個人' ? undefined : task.business_type) }}
-                            />
+                          <div className="col-span-5 table-cell flex items-center gap-3">
+                            <div className={`accent-bar ${getAccentClass(task.business_type, task.category === '個人')}`} />
                             <button
                               onClick={() => setSelectedTask(task)}
-                              className="text-left font-medium text-gray-900 hover:text-blue-600 transition-colors"
+                              className="text-left font-medium text-neutral-900 hover:text-primary-600 transition-colors"
                             >
                               {task.title}
                             </button>
                           </div>
 
                           {/* 期限 */}
-                          <div className="col-span-2 flex items-center justify-center">
+                          <div className="col-span-2 table-cell flex items-center justify-center">
                             <input
                               type="date"
                               value={task.due_date ? task.due_date.split('T')[0] : ''}
                               onChange={(e) => handleUpdateField(task.id, 'due_date', e.target.value || null)}
-                              className={`px-2 py-1 text-sm rounded border ${
-                                isOverdue(task) ? 'border-red-500 text-red-600 font-semibold' : 'border-gray-300 text-gray-700'
+                              className={`input py-1.5 text-sm ${
+                                isOverdue(task) ? 'border-danger-500 text-danger-600 font-semibold' : ''
                               }`}
                             />
                           </div>
 
                           {/* カテゴリ */}
-                          <div className="col-span-2 flex items-center justify-center">
+                          <div className="col-span-2 table-cell flex items-center justify-center">
                             {task.category === '事業' && task.business_type ? (
                               <span
-                                className="px-3 py-1 rounded-full text-xs font-medium text-white"
+                                className="badge text-white font-semibold"
                                 style={{ backgroundColor: getBusinessColor(task.business_type) }}
                               >
                                 {task.business_type}
                               </span>
                             ) : (
-                              <span className="px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
+                              <span className="badge badge-secondary">
                                 {task.category}
                               </span>
                             )}
                           </div>
 
                           {/* ステータス */}
-                          <div className="col-span-2 flex items-center justify-center">
+                          <div className="col-span-2 table-cell flex items-center justify-center">
                             <select
                               value={task.status}
                               onChange={(e) => handleUpdateField(task.id, 'status', e.target.value)}
-                              className="px-3 py-1 rounded text-xs font-medium cursor-pointer border-0 outline-none"
-                              style={{ backgroundColor: colors.bg, color: colors.text }}
+                              className={`select py-1.5 text-sm font-semibold cursor-pointer ${
+                                task.status === '完了' ? 'status-done' :
+                                task.status === '進行中' ? 'status-progress' : 'status-todo'
+                              }`}
                             >
                               <option value="未着手">未着手</option>
                               <option value="進行中">進行中</option>
@@ -433,8 +475,8 @@ export default function Home() {
                           </div>
 
                           {/* 優先度 */}
-                          <div className="col-span-1 flex items-center justify-center">
-                            <span className="text-lg">{priorityEmoji(task.priority)}</span>
+                          <div className="col-span-1 table-cell flex items-center justify-center">
+                            <span className="text-xl">{priorityEmoji(task.priority)}</span>
                           </div>
                         </div>
                       );
@@ -442,12 +484,15 @@ export default function Home() {
 
                     {/* Add Item ボタン */}
                     {!isCollapsed && (
-                      <div className="px-6 py-3">
+                      <div className="px-6 py-4">
                         <button
                           onClick={() => setShowAddModal(true)}
-                          className="text-sm text-gray-500 hover:text-gray-700 font-medium"
+                          className="btn-ghost btn-sm text-neutral-600"
                         >
-                          + アイテムを追加
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                          </svg>
+                          アイテムを追加
                         </button>
                       </div>
                     )}
@@ -456,9 +501,10 @@ export default function Home() {
               })}
 
               {tasks.length === 0 && (
-                <div className="text-center py-12 text-gray-500">
-                  <p className="text-lg mb-2">📭</p>
-                  <p>タスクがありません</p>
+                <div className="text-center py-16 text-neutral-500">
+                  <div className="text-5xl mb-4">📭</div>
+                  <p className="text-lg font-medium">タスクがありません</p>
+                  <p className="text-sm mt-2">「+ タスク追加」から新しいタスクを作成しましょう</p>
                 </div>
               )}
             </div>
@@ -466,10 +512,10 @@ export default function Home() {
         </div>
 
         {/* カード型ビュー（スマホのみ） */}
-        <div className="md:hidden flex-1 overflow-auto">
+        <div className="md:hidden flex-1 overflow-auto bg-neutral-50">
           {loading ? (
             <div className="flex items-center justify-center h-full">
-              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+              <div className="spinner spinner-lg" />
             </div>
           ) : (
             <div className="p-4 space-y-6">
@@ -481,43 +527,40 @@ export default function Home() {
                   <div key={groupName}>
                     {/* グループヘッダー */}
                     <div
-                      className="group-header"
+                      className="flex items-center justify-between mb-4 cursor-pointer"
                       onClick={() => toggleGroup(groupName)}
                     >
-                      <div className="group-title">
-                        <span className="text-xl transition-transform duration-200" style={{ transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)' }}>
+                      <div className="flex items-center gap-2">
+                        <span 
+                          className="text-neutral-400 transition-transform duration-200" 
+                          style={{ transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)' }}
+                        >
                           ▼
                         </span>
-                        <span>{groupName}</span>
+                        <h3 className="font-semibold text-neutral-900">{groupName}</h3>
+                        <span className="badge badge-neutral">{groupTasks.length}</span>
                       </div>
-                      <span className="badge badge-primary">
-                        {groupTasks.length}
-                      </span>
                     </div>
 
                     {/* グループのタスク（カード型） */}
                     {!isCollapsed && (
                       <div className="space-y-3">
                         {groupTasks.map((task) => {
-                          const colors = statusColor(task.status);
-                          const overdueStyle = isOverdue(task) ? 'border-red-500 bg-red-50' : '';
+                          const overdueClass = isOverdue(task) ? 'border-danger-500 bg-danger-50' : '';
 
                           return (
                             <div
                               key={task.id}
                               onClick={() => setSelectedTask(task)}
-                              className={`task-card ${isOverdue(task) ? '!border-red-400 !bg-red-50/50' : ''}`}
+                              className={`card card-interactive p-4 ${overdueClass}`}
                             >
                               {/* カラーバー + タイトル */}
-                              <div className="flex items-start gap-3 mb-4">
-                                <div
-                                  className="w-1.5 h-full min-h-[48px] rounded-full shadow-sm"
-                                  style={{ backgroundColor: getBusinessColor(task.category === '個人' ? undefined : task.business_type) }}
-                                />
-                                <div className="flex-1">
-                                  <h4 className="font-bold text-gray-900 mb-2 text-base leading-snug">{task.title}</h4>
+                              <div className="flex items-start gap-3 mb-3">
+                                <div className={`accent-bar ${getAccentClass(task.business_type, task.category === '個人')}`} />
+                                <div className="flex-1 min-w-0">
+                                  <h4 className="font-semibold text-neutral-900 mb-1">{task.title}</h4>
                                   {task.description && (
-                                    <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed">{task.description}</p>
+                                    <p className="text-sm text-neutral-600 truncate-2">{task.description}</p>
                                   )}
                                 </div>
                               </div>
@@ -525,43 +568,42 @@ export default function Home() {
                               {/* メタ情報 */}
                               <div className="flex flex-wrap gap-2">
                                 {/* ステータス */}
-                                <span
-                                  className="badge shadow-sm"
-                                  style={{ backgroundColor: colors.bg, color: colors.text }}
-                                >
+                                <span className={`status-pill ${
+                                  task.status === '完了' ? 'status-done' :
+                                  task.status === '進行中' ? 'status-progress' : 'status-todo'
+                                }`}>
                                   {task.status}
                                 </span>
 
                                 {/* カテゴリ */}
                                 {task.category === '事業' && task.business_type ? (
                                   <span
-                                    className="badge text-white shadow-sm"
+                                    className="badge text-white font-semibold"
                                     style={{ backgroundColor: getBusinessColor(task.business_type) }}
                                   >
                                     {task.business_type}
                                   </span>
                                 ) : (
-                                  <span className="badge bg-purple-100 text-purple-700 shadow-sm">
+                                  <span className="badge badge-secondary">
                                     {task.category}
                                   </span>
                                 )}
 
                                 {/* 優先度 */}
                                 {task.priority && (
-                                  <span className="badge badge-warning shadow-sm flex items-center gap-1.5">
-                                    <span className="text-base">{priorityEmoji(task.priority)}</span>
+                                  <span className="badge badge-neutral flex items-center gap-1">
+                                    <span className="text-sm">{priorityEmoji(task.priority)}</span>
                                     <span>{task.priority}</span>
                                   </span>
                                 )}
 
                                 {/* 期限 */}
                                 {task.due_date && (
-                                  <span className={`badge shadow-sm flex items-center gap-1.5 ${
-                                    isOverdue(task) ? 'badge-danger' : 'badge-primary'
-                                  }`}>
-                                    <span className="text-base">📅</span>
-                                    <span>{formatDate(task.due_date)}</span>
-                                    {isOverdue(task) && <span>⚠️</span>}
+                                  <span className={`badge ${
+                                    isOverdue(task) ? 'badge-danger' : 'badge-neutral'
+                                  } flex items-center gap-1`}>
+                                    📅 {formatDate(task.due_date)}
+                                    {isOverdue(task) && ' ⚠️'}
                                   </span>
                                 )}
                               </div>
@@ -575,9 +617,10 @@ export default function Home() {
               })}
 
               {tasks.length === 0 && (
-                <div className="text-center py-12 text-gray-500">
-                  <p className="text-lg mb-2">📭</p>
-                  <p>タスクがありません</p>
+                <div className="text-center py-16 text-neutral-500">
+                  <div className="text-5xl mb-4">📭</div>
+                  <p className="text-lg font-medium">タスクがありません</p>
+                  <p className="text-sm mt-2">「追加」ボタンから新しいタスクを作成しましょう</p>
                 </div>
               )}
             </div>
@@ -587,38 +630,46 @@ export default function Home() {
 
       {/* タスク詳細パネル */}
       {selectedTask && (
-        <div className="fixed inset-0 md:right-0 md:left-auto md:w-[500px] bg-white shadow-2xl z-50 overflow-y-auto md:border-l border-gray-200">
-          <div className="p-6">
+        <div className="fixed inset-0 md:right-0 md:left-auto md:w-[500px] bg-white shadow-2xl z-50 overflow-y-auto md:border-l-2 border-neutral-200 animate-slideIn">
+          <div className="p-6 md:p-8">
+            {/* ヘッダー */}
             <div className="flex items-start justify-between mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">タスク詳細</h2>
+              <div className="flex items-center gap-3">
+                <div className={`accent-bar h-12 ${getAccentClass(selectedTask.business_type, selectedTask.category === '個人')}`} />
+                <h2 className="text-2xl font-bold text-neutral-900">タスク詳細</h2>
+              </div>
               <button
                 onClick={() => setSelectedTask(null)}
-                className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
+                className="btn-ghost p-2 rounded-lg text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100"
+                aria-label="Close"
               >
-                ×
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
               </button>
             </div>
 
             <div className="space-y-6">
               {/* タイトル */}
               <div>
+                <label className="block text-sm font-semibold text-neutral-700 mb-2">タスク名</label>
                 <input
                   type="text"
                   value={selectedTask.title}
                   onChange={(e) => setSelectedTask({ ...selectedTask, title: e.target.value })}
                   onBlur={() => handleUpdateField(selectedTask.id, 'title', selectedTask.title)}
-                  className="text-xl font-bold text-gray-900 mb-4 w-full border-0 border-b-2 border-transparent hover:border-gray-300 focus:border-blue-500 outline-none"
+                  className="input text-lg font-semibold"
                 />
               </div>
 
               {/* ステータス・優先度 */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">ステータス</label>
+                  <label className="block text-sm font-semibold text-neutral-700 mb-2">ステータス</label>
                   <select
                     value={selectedTask.status}
                     onChange={(e) => handleUpdateField(selectedTask.id, 'status', e.target.value)}
-                    className="w-full px-3 py-2 rounded border border-gray-300"
+                    className="select"
                   >
                     <option value="未着手">未着手</option>
                     <option value="進行中">進行中</option>
@@ -627,56 +678,81 @@ export default function Home() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">優先度</label>
+                  <label className="block text-sm font-semibold text-neutral-700 mb-2">優先度</label>
                   <select
                     value={selectedTask.priority || ''}
                     onChange={(e) => handleUpdateField(selectedTask.id, 'priority', e.target.value || undefined)}
-                    className="w-full px-3 py-2 rounded border border-gray-300"
+                    className="select"
                   >
                     <option value="">なし</option>
-                    <option value="今すぐやる">今すぐやる</option>
-                    <option value="今週やる">今週やる</option>
-                    <option value="今月やる">今月やる</option>
-                    <option value="高">高</option>
-                    <option value="中">中</option>
-                    <option value="低">低</option>
+                    <option value="今すぐやる">🔥 今すぐやる</option>
+                    <option value="今週やる">⚡ 今週やる</option>
+                    <option value="今月やる">📅 今月やる</option>
+                    <option value="高">🔴 高</option>
+                    <option value="中">🟡 中</option>
+                    <option value="低">🟢 低</option>
                   </select>
                 </div>
               </div>
 
               {/* 期限 */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">期限</label>
+                <label className="block text-sm font-semibold text-neutral-700 mb-2">期限</label>
                 <input
                   type="date"
                   value={selectedTask.due_date ? selectedTask.due_date.split('T')[0] : ''}
                   onChange={(e) => handleUpdateField(selectedTask.id, 'due_date', e.target.value || null)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded"
+                  className="input"
                 />
+                {isOverdue(selectedTask) && (
+                  <p className="text-sm text-danger-600 font-medium mt-2 flex items-center gap-1">
+                    ⚠️ 期限を過ぎています
+                  </p>
+                )}
+              </div>
+
+              {/* カテゴリ */}
+              <div>
+                <label className="block text-sm font-semibold text-neutral-700 mb-2">カテゴリ</label>
+                <div className="flex gap-3">
+                  {selectedTask.category === '個人' ? (
+                    <span className="badge badge-secondary">👤 個人</span>
+                  ) : (
+                    <span
+                      className="badge text-white font-semibold"
+                      style={{ backgroundColor: getBusinessColor(selectedTask.business_type) }}
+                    >
+                      🏢 {selectedTask.business_type || '事業'}
+                    </span>
+                  )}
+                </div>
               </div>
 
               {/* 説明 */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">説明</label>
+                <label className="block text-sm font-semibold text-neutral-700 mb-2">説明</label>
                 <textarea
                   value={selectedTask.description || ''}
                   onChange={(e) => setSelectedTask({ ...selectedTask, description: e.target.value })}
                   onBlur={() => handleUpdateField(selectedTask.id, 'description', selectedTask.description)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded"
-                  rows={4}
+                  className="textarea"
+                  rows={5}
                   placeholder="詳細な説明を入力..."
                 />
               </div>
 
+              <div className="divider" />
+
               {/* 削除ボタン */}
-              <div className="border-t pt-4">
-                <button
-                  onClick={() => handleDeleteTask(selectedTask.id)}
-                  className="w-full px-4 py-3 bg-red-50 text-red-600 rounded-lg font-medium hover:bg-red-100"
-                >
-                  🗑️ このタスクを削除
-                </button>
-              </div>
+              <button
+                onClick={() => handleDeleteTask(selectedTask.id)}
+                className="btn btn-danger w-full"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                このタスクを削除
+              </button>
             </div>
           </div>
         </div>
@@ -684,76 +760,88 @@ export default function Home() {
 
       {/* タスク追加モーダル */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full p-8 max-h-[90vh] overflow-y-auto">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">新しいタスクを追加</h2>
+        <div className="modal-backdrop">
+          <div className="modal-content">
+            <div className="flex items-start justify-between mb-6">
+              <h2 className="text-2xl font-bold text-neutral-900">新しいタスクを追加</h2>
+              <button
+                onClick={() => setShowAddModal(false)}
+                className="btn-ghost p-2 rounded-lg text-neutral-400 hover:text-neutral-600"
+                aria-label="Close"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
             
-            <div className="space-y-4">
+            <div className="space-y-5">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  タスク名 <span className="text-red-500">*</span>
+                <label className="block text-sm font-semibold text-neutral-700 mb-2">
+                  タスク名 <span className="text-danger-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={newTask.title}
                   onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                  className="input"
                   placeholder="例: 資料作成"
+                  autoFocus
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">期限</label>
+                <label className="block text-sm font-semibold text-neutral-700 mb-2">期限</label>
                 <input
                   type="date"
                   value={newTask.due_date || ''}
                   onChange={(e) => setNewTask({ ...newTask, due_date: e.target.value || undefined })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                  className="input"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">説明</label>
+                <label className="block text-sm font-semibold text-neutral-700 mb-2">説明</label>
                 <textarea
                   value={newTask.description}
                   onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                  className="textarea"
                   rows={3}
                   placeholder="詳細な説明（任意）"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">カテゴリ</label>
+                <label className="block text-sm font-semibold text-neutral-700 mb-3">カテゴリ</label>
                 <div className="flex gap-4">
-                  <label className="flex items-center cursor-pointer">
+                  <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="radio"
                       checked={newTask.category === '個人'}
                       onChange={() => setNewTask({ ...newTask, category: '個人', business_type: undefined })}
-                      className="mr-2"
+                      className="w-4 h-4 text-primary-600 focus:ring-primary-500"
                     />
-                    <span>個人</span>
+                    <span className="text-sm font-medium">👤 個人</span>
                   </label>
-                  <label className="flex items-center cursor-pointer">
+                  <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="radio"
                       checked={newTask.category === '事業'}
                       onChange={() => setNewTask({ ...newTask, category: '事業' })}
-                      className="mr-2"
+                      className="w-4 h-4 text-primary-600 focus:ring-primary-500"
                     />
-                    <span>事業</span>
+                    <span className="text-sm font-medium">🏢 事業</span>
                   </label>
                 </div>
               </div>
 
               {newTask.category === '事業' && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">事業種別</label>
+                  <label className="block text-sm font-semibold text-neutral-700 mb-2">事業種別</label>
                   <select
                     value={newTask.business_type || ''}
                     onChange={(e) => setNewTask({ ...newTask, business_type: e.target.value as Task['business_type'] })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                    className="select"
                   >
                     <option value="">選択してください</option>
                     <option value="不動産">不動産</option>
@@ -767,33 +855,33 @@ export default function Home() {
               )}
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">優先度</label>
+                <label className="block text-sm font-semibold text-neutral-700 mb-2">優先度</label>
                 <select
                   value={newTask.priority || ''}
                   onChange={(e) => setNewTask({ ...newTask, priority: e.target.value as Task['priority'] })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                  className="select"
                 >
                   <option value="">選択してください</option>
-                  <option value="今すぐやる">今すぐやる</option>
-                  <option value="今週やる">今週やる</option>
-                  <option value="今月やる">今月やる</option>
-                  <option value="高">高</option>
-                  <option value="中">中</option>
-                  <option value="低">低</option>
+                  <option value="今すぐやる">🔥 今すぐやる</option>
+                  <option value="今週やる">⚡ 今週やる</option>
+                  <option value="今月やる">📅 今月やる</option>
+                  <option value="高">🔴 高</option>
+                  <option value="中">🟡 中</option>
+                  <option value="低">🟢 低</option>
                 </select>
               </div>
             </div>
 
-            <div className="flex gap-4 mt-6">
+            <div className="flex gap-3 mt-8">
               <button
                 onClick={() => setShowAddModal(false)}
-                className="flex-1 px-6 py-3 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200"
+                className="btn btn-secondary flex-1"
               >
                 キャンセル
               </button>
               <button
                 onClick={handleAddTask}
-                className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700"
+                className="btn btn-primary flex-1"
               >
                 追加する
               </button>
