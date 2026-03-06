@@ -230,9 +230,18 @@ export default function Home() {
 
   return (
     <div className="flex h-screen bg-neutral-50">
-      {/* 左サイドバー - デスクトップのみ */}
+      {/* サイドバーバックドロップ（モバイルのみ） */}
       {sidebarOpen && (
-        <div className="sidebar hidden md:flex">
+        <div
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+          aria-label="Close sidebar"
+        />
+      )}
+
+      {/* 左サイドバー */}
+      {sidebarOpen && (
+        <div className="sidebar fixed md:relative z-50 md:z-auto">
           {/* ロゴ */}
           <div className="p-6 border-b border-neutral-200">
             <h1 className="text-xl font-bold text-neutral-900">タスク管理</h1>
@@ -313,10 +322,10 @@ export default function Home() {
         <div className="bg-white border-b border-neutral-200 px-4 md:px-6 py-4 shadow-sm">
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div className="flex items-center gap-3 md:gap-4">
-              {/* サイドバー開閉 */}
+              {/* サイドバー開閉（全デバイス対応） */}
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="hidden md:flex btn-ghost p-2 rounded-lg hover:bg-neutral-100 transition-colors"
+                className="btn-ghost p-2 rounded-lg hover:bg-neutral-100 transition-colors"
                 aria-label="Toggle sidebar"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -739,6 +748,122 @@ export default function Home() {
                   rows={5}
                   placeholder="詳細な説明を入力..."
                 />
+              </div>
+
+              <div className="divider" />
+
+              {/* サブタスクセクション */}
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-neutral-900">サブタスク</h3>
+                  <span className="badge badge-neutral">
+                    {subtasks.filter(s => s.completed).length}/{subtasks.length}
+                  </span>
+                </div>
+
+                {/* サブタスク一覧 */}
+                <div className="space-y-2 mb-4">
+                  {subtasks.map((subtask) => (
+                    <div
+                      key={subtask.id}
+                      className="flex items-center gap-3 p-3 rounded-lg border border-neutral-200 hover:bg-neutral-50 transition-colors"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={subtask.completed}
+                        onChange={async () => {
+                          const { error } = await supabase
+                            .from('subtasks')
+                            .update({ completed: !subtask.completed })
+                            .eq('id', subtask.id);
+                          if (!error) {
+                            fetchSubtasks(selectedTask.id);
+                          }
+                        }}
+                        className="w-5 h-5 rounded border-neutral-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
+                      />
+                      <span className={`flex-1 ${subtask.completed ? 'line-through text-neutral-400' : 'text-neutral-900'}`}>
+                        {subtask.title}
+                      </span>
+                      <button
+                        onClick={async () => {
+                          if (confirm('このサブタスクを削除しますか？')) {
+                            const { error } = await supabase
+                              .from('subtasks')
+                              .delete()
+                              .eq('id', subtask.id);
+                            if (!error) {
+                              fetchSubtasks(selectedTask.id);
+                            }
+                          }
+                        }}
+                        className="text-neutral-400 hover:text-danger-600 transition-colors"
+                        aria-label="削除"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                {/* サブタスク追加フォーム */}
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newSubtaskTitle}
+                    onChange={(e) => setNewSubtaskTitle(e.target.value)}
+                    onKeyPress={async (e) => {
+                      if (e.key === 'Enter' && newSubtaskTitle.trim()) {
+                        const validation = validateSubtaskTitle(newSubtaskTitle);
+                        if (!validation.valid) {
+                          alert(validation.error);
+                          return;
+                        }
+                        const { error } = await supabase
+                          .from('subtasks')
+                          .insert([{
+                            task_id: selectedTask.id,
+                            title: newSubtaskTitle.trim(),
+                            completed: false
+                          }]);
+                        if (!error) {
+                          setNewSubtaskTitle('');
+                          fetchSubtasks(selectedTask.id);
+                        }
+                      }
+                    }}
+                    className="input flex-1"
+                    placeholder="サブタスクを追加..."
+                  />
+                  <button
+                    onClick={async () => {
+                      if (!newSubtaskTitle.trim()) return;
+                      const validation = validateSubtaskTitle(newSubtaskTitle);
+                      if (!validation.valid) {
+                        alert(validation.error);
+                        return;
+                      }
+                      const { error } = await supabase
+                        .from('subtasks')
+                        .insert([{
+                          task_id: selectedTask.id,
+                          title: newSubtaskTitle.trim(),
+                          completed: false
+                        }]);
+                      if (!error) {
+                        setNewSubtaskTitle('');
+                        fetchSubtasks(selectedTask.id);
+                      }
+                    }}
+                    className="btn btn-primary"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                  </button>
+                </div>
               </div>
 
               <div className="divider" />

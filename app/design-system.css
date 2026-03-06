@@ -425,6 +425,24 @@ body {
   flex-direction: column;
 }
 
+/* モバイル用サイドバーアニメーション */
+@media (max-width: 768px) {
+  .sidebar {
+    animation: slideInFromLeft 300ms ease-out;
+  }
+}
+
+@keyframes slideInFromLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
 .sidebar-item {
   width: 100%;
   padding: 0.625rem 0.75rem;
