@@ -417,11 +417,10 @@ export default function Home() {
             <div className="bg-white overflow-x-auto w-full">
               {/* テーブルヘッダー */}
               <div className="grid grid-cols-12 gap-4 table-header">
-                <div className="col-span-5">タスク</div>
+                <div className="col-span-6">タスク</div>
                 <div className="col-span-2 text-center">期限</div>
                 <div className="col-span-2 text-center">カテゴリ</div>
-                <div className="col-span-2 text-center">ステータス</div>
-                <div className="col-span-1 text-center">優先度</div>
+                <div className="col-span-2 text-center">ステータス / 優先度</div>
               </div>
 
               {/* グループごとのテーブル */}
@@ -455,17 +454,24 @@ export default function Home() {
                       return (
                         <div
                           key={task.id}
-                          className={`table-row grid grid-cols-12 gap-4 ${overdueClass}`}
+                          onClick={() => setSelectedTask(task)}
+                          className={`table-row grid grid-cols-12 gap-4 cursor-pointer ${overdueClass}`}
                         >
-                          {/* タスク名 */}
-                          <div className="col-span-5 table-cell flex items-center gap-3">
-                            <div className={`accent-bar ${getAccentClass(task.business_type, task.category === '個人')}`} />
-                            <button
-                              onClick={() => setSelectedTask(task)}
-                              className="text-left font-medium text-neutral-900 hover:text-primary-600 transition-colors"
-                            >
-                              {task.title}
-                            </button>
+                          {/* タスク名 + 説明 */}
+                          <div className="col-span-6 table-cell">
+                            <div className="flex items-start gap-3">
+                              <div className={`accent-bar ${getAccentClass(task.business_type, task.category === '個人')}`} />
+                              <div className="flex-1 min-w-0">
+                                <div className="font-medium text-neutral-900 mb-1">
+                                  {task.title}
+                                </div>
+                                {task.description && (
+                                  <div className="text-sm text-neutral-500 truncate-2">
+                                    {task.description}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
                           </div>
 
                           {/* 期限 */}
@@ -474,6 +480,7 @@ export default function Home() {
                               type="date"
                               value={task.due_date ? task.due_date.split('T')[0] : ''}
                               onChange={(e) => handleUpdateField(task.id, 'due_date', e.target.value || null)}
+                              onClick={(e) => e.stopPropagation()}
                               className={`input py-1.5 text-sm ${
                                 isOverdue(task) ? 'border-danger-500 text-danger-600 font-semibold' : ''
                               }`}
@@ -496,12 +503,13 @@ export default function Home() {
                             )}
                           </div>
 
-                          {/* ステータス */}
-                          <div className="col-span-2 table-cell flex items-center justify-center">
+                          {/* ステータス + 優先度 */}
+                          <div className="col-span-2 table-cell flex items-center justify-center gap-2">
                             <select
                               value={task.status}
                               onChange={(e) => handleUpdateField(task.id, 'status', e.target.value)}
-                              className={`select py-1.5 text-sm font-semibold cursor-pointer ${
+                              onClick={(e) => e.stopPropagation()}
+                              className={`select py-1.5 text-sm font-semibold cursor-pointer flex-1 ${
                                 task.status === '完了' ? 'status-done' :
                                 task.status === '進行中' ? 'status-progress' : 'status-todo'
                               }`}
@@ -510,11 +518,7 @@ export default function Home() {
                               <option value="進行中">進行中</option>
                               <option value="完了">完了</option>
                             </select>
-                          </div>
-
-                          {/* 優先度 */}
-                          <div className="col-span-1 table-cell flex items-center justify-center">
-                            <span className="text-xl">{priorityEmoji(task.priority)}</span>
+                            <span className="text-xl flex-shrink-0">{priorityEmoji(task.priority)}</span>
                           </div>
                         </div>
                       );
@@ -522,7 +526,7 @@ export default function Home() {
 
                     {/* Add Item ボタン */}
                     {!isCollapsed && (
-                      <div className="px-6 py-4">
+                      <div className="px-4 py-3">
                         <button
                           onClick={() => setShowAddModal(true)}
                           className="btn-ghost btn-sm text-neutral-600"

@@ -491,7 +491,7 @@ body {
 .table-header {
   background-color: var(--color-neutral-50);
   border-bottom: 1px solid var(--color-neutral-200);
-  padding: 0.75rem 1.5rem;
+  padding: 0.75rem 1rem;
   font-size: 0.75rem;
   font-weight: 600;
   color: var(--color-neutral-600);
@@ -512,7 +512,7 @@ body {
 }
 
 .table-cell {
-  padding: 1rem 1.5rem;
+  padding: 0.875rem 1rem;
   font-size: 0.875rem;
   color: var(--color-neutral-900);
 }
@@ -548,6 +548,7 @@ body {
   width: 0.25rem;
   border-radius: 9999px;
   min-height: 40px;
+  align-self: stretch;
 }
 
 .accent-fudosan {
@@ -607,7 +608,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.75rem 1.5rem;
+  padding: 0.75rem 1rem;
   background-color: var(--color-neutral-50);
   cursor: pointer;
   transition: colors 150ms;
