@@ -543,14 +543,19 @@ export default function Home() {
                           {/* タスク名 + 補足 */}
                           <div className="col-span-5 flex items-center py-4">
                             <div className="flex items-center gap-3 w-full">
-                              <div className={`accent-bar ${getAccentClass(task.business_type, task.category === '個人')}`} style={{ minHeight: '56px' }} />
+                              <div className={`accent-bar ${getAccentClass(task.business_type, task.category === '個人')}`} style={{ minHeight: task.description ? '80px' : '56px' }} />
                               <div className="flex-1 min-w-0">
                                 <div className="font-semibold text-neutral-900 mb-1 text-base">
                                   {task.title}
                                 </div>
                                 {task.description && (
-                                  <div className="text-xs text-neutral-500 line-clamp-1 mt-0.5">
-                                    {task.description.split('\n')[0]}
+                                  <div className="text-sm text-neutral-600 mt-2 whitespace-pre-wrap" style={{ 
+                                    display: '-webkit-box',
+                                    WebkitLineClamp: 3,
+                                    WebkitBoxOrient: 'vertical',
+                                    overflow: 'hidden'
+                                  }}>
+                                    {task.description}
                                   </div>
                                 )}
                               </div>
