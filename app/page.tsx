@@ -320,9 +320,10 @@ export default function Home() {
 
             <button
               onClick={() => setShowAddModal(true)}
-              className="px-3 md:px-4 py-2 bg-blue-600 text-white rounded-lg text-xs md:text-sm font-medium hover:bg-blue-700 transition-colors"
+              className="btn btn-primary text-xs md:text-sm"
             >
-              + タスク追加
+              <span className="text-lg">+</span>
+              <span>タスク追加</span>
             </button>
           </div>
         </div>
@@ -480,16 +481,18 @@ export default function Home() {
                   <div key={groupName}>
                     {/* グループヘッダー */}
                     <div
-                      className="flex items-center justify-between mb-3 cursor-pointer"
+                      className="group-header"
                       onClick={() => toggleGroup(groupName)}
                     >
-                      <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-                        <span className="transition-transform" style={{ transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)' }}>
+                      <div className="group-title">
+                        <span className="text-xl transition-transform duration-200" style={{ transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)' }}>
                           ▼
                         </span>
-                        {groupName}
-                      </h3>
-                      <span className="text-sm text-gray-500">({groupTasks.length})</span>
+                        <span>{groupName}</span>
+                      </div>
+                      <span className="badge badge-primary">
+                        {groupTasks.length}
+                      </span>
                     </div>
 
                     {/* グループのタスク（カード型） */}
@@ -503,18 +506,18 @@ export default function Home() {
                             <div
                               key={task.id}
                               onClick={() => setSelectedTask(task)}
-                              className={`bg-white rounded-lg p-4 shadow-sm border-2 border-gray-200 ${overdueStyle} active:bg-gray-50 cursor-pointer`}
+                              className={`task-card ${isOverdue(task) ? '!border-red-400 !bg-red-50/50' : ''}`}
                             >
                               {/* カラーバー + タイトル */}
-                              <div className="flex items-start gap-2 mb-3">
+                              <div className="flex items-start gap-3 mb-4">
                                 <div
-                                  className="w-1 h-full min-h-[40px] rounded-full"
+                                  className="w-1.5 h-full min-h-[48px] rounded-full shadow-sm"
                                   style={{ backgroundColor: getBusinessColor(task.category === '個人' ? undefined : task.business_type) }}
                                 />
                                 <div className="flex-1">
-                                  <h4 className="font-semibold text-gray-900 mb-1">{task.title}</h4>
+                                  <h4 className="font-bold text-gray-900 mb-2 text-base leading-snug">{task.title}</h4>
                                   {task.description && (
-                                    <p className="text-sm text-gray-600 line-clamp-2">{task.description}</p>
+                                    <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed">{task.description}</p>
                                   )}
                                 </div>
                               </div>
@@ -523,7 +526,7 @@ export default function Home() {
                               <div className="flex flex-wrap gap-2">
                                 {/* ステータス */}
                                 <span
-                                  className="px-3 py-1 rounded text-xs font-medium"
+                                  className="badge shadow-sm"
                                   style={{ backgroundColor: colors.bg, color: colors.text }}
                                 >
                                   {task.status}
@@ -532,32 +535,33 @@ export default function Home() {
                                 {/* カテゴリ */}
                                 {task.category === '事業' && task.business_type ? (
                                   <span
-                                    className="px-3 py-1 rounded text-xs font-medium text-white"
+                                    className="badge text-white shadow-sm"
                                     style={{ backgroundColor: getBusinessColor(task.business_type) }}
                                   >
                                     {task.business_type}
                                   </span>
                                 ) : (
-                                  <span className="px-3 py-1 rounded text-xs font-medium bg-purple-100 text-purple-700">
+                                  <span className="badge bg-purple-100 text-purple-700 shadow-sm">
                                     {task.category}
                                   </span>
                                 )}
 
                                 {/* 優先度 */}
                                 {task.priority && (
-                                  <span className="flex items-center gap-1 px-3 py-1 rounded text-xs font-medium bg-gray-100 text-gray-700">
-                                    <span className="text-sm">{priorityEmoji(task.priority)}</span>
+                                  <span className="badge badge-warning shadow-sm flex items-center gap-1.5">
+                                    <span className="text-base">{priorityEmoji(task.priority)}</span>
                                     <span>{task.priority}</span>
                                   </span>
                                 )}
 
                                 {/* 期限 */}
                                 {task.due_date && (
-                                  <span className={`flex items-center gap-1 px-3 py-1 rounded text-xs font-medium ${
-                                    isOverdue(task) ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'
+                                  <span className={`badge shadow-sm flex items-center gap-1.5 ${
+                                    isOverdue(task) ? 'badge-danger' : 'badge-primary'
                                   }`}>
-                                    📅 {formatDate(task.due_date)}
-                                    {isOverdue(task) && ' ⚠️'}
+                                    <span className="text-base">📅</span>
+                                    <span>{formatDate(task.due_date)}</span>
+                                    {isOverdue(task) && <span>⚠️</span>}
                                   </span>
                                 )}
                               </div>
