@@ -499,8 +499,8 @@ export default function Home() {
             <div className="bg-white/95 backdrop-blur-sm overflow-x-auto w-full rounded-lg border border-neutral-200/50 shadow-sm">
               {/* テーブルヘッダー */}
               <div className="grid grid-cols-12 gap-4 table-header items-center px-6" style={{ minHeight: '64px' }}>
-                <div className="col-span-5 flex items-center">タスク</div>
-                <div className="col-span-2 flex items-center justify-center">期限</div>
+                <div className="col-span-6 flex items-center">タスク</div>
+                <div className="col-span-1 flex items-center justify-center">期限</div>
                 <div className="col-span-2 flex items-center justify-center">カテゴリ</div>
                 <div className="col-span-3 flex items-center justify-center">ステータス / 優先度</div>
               </div>
@@ -541,38 +541,47 @@ export default function Home() {
                           style={{ minHeight: '80px', alignItems: 'center' }}
                         >
                           {/* タスク名 + 補足 */}
-                          <div className="col-span-5 flex items-center py-4">
+                          <div className="col-span-6 flex items-center py-4">
                             <div className="flex items-center gap-3 w-full">
-                              <div className={`accent-bar ${getAccentClass(task.business_type, task.category === '個人')}`} style={{ minHeight: task.description ? '80px' : '56px' }} />
+                              <div className={`accent-bar ${getAccentClass(task.business_type, task.category === '個人')}`} style={{ minHeight: task.note ? '80px' : '56px' }} />
                               <div className="flex-1 min-w-0">
                                 <div className="font-semibold text-neutral-900 mb-1 text-base">
                                   {task.title}
                                 </div>
-                                {task.description && (
-                                  <div className="text-sm text-neutral-600 mt-2 whitespace-pre-wrap" style={{ 
+                                {/* 補足説明（クリックで編集可能） */}
+                                <div
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedTask(task);
+                                  }}
+                                  className="text-sm text-neutral-600 mt-2 cursor-pointer hover:bg-neutral-100 p-1 rounded transition-colors"
+                                  style={{ 
+                                    minHeight: '20px',
                                     display: '-webkit-box',
-                                    WebkitLineClamp: 3,
+                                    WebkitLineClamp: 2,
                                     WebkitBoxOrient: 'vertical',
                                     overflow: 'hidden'
-                                  }}>
-                                    {task.description}
-                                  </div>
-                                )}
+                                  }}
+                                >
+                                  {task.note || (
+                                    <span className="text-neutral-400 italic text-xs">補足説明をクリックして追加...</span>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           </div>
 
                           {/* 期限 */}
-                          <div className="col-span-2 flex items-center justify-center py-4">
+                          <div className="col-span-1 flex items-center justify-center py-4">
                             <input
                               type="date"
                               value={task.due_date ? task.due_date.split('T')[0] : ''}
                               onChange={(e) => handleUpdateField(task.id, 'due_date', e.target.value || null)}
                               onClick={(e) => e.stopPropagation()}
-                              className={`input text-sm font-medium text-center ${
+                              className={`input text-xs font-medium text-center ${
                                 isOverdue(task) ? 'border-danger-500 text-danger-600 font-bold bg-danger-50' : ''
                               }`}
-                              style={{ height: '44px', padding: '0 12px', fontSize: '14px', width: '100%' }}
+                              style={{ height: '40px', padding: '0 6px', fontSize: '12px', width: '100%' }}
                             />
                           </div>
 
@@ -930,9 +939,22 @@ export default function Home() {
                 </div>
               </div>
 
+              {/* 補足説明 */}
+              <div>
+                <label className="block text-sm font-semibold text-neutral-700 mb-2">補足説明（テーブルに表示）</label>
+                <textarea
+                  value={selectedTask.note || ''}
+                  onChange={(e) => setSelectedTask({ ...selectedTask, note: e.target.value })}
+                  onBlur={() => handleUpdateField(selectedTask.id, 'note', selectedTask.note)}
+                  className="textarea"
+                  rows={3}
+                  placeholder="テーブルに表示する補足説明を入力..."
+                />
+              </div>
+
               {/* 説明 */}
               <div>
-                <label className="block text-sm font-semibold text-neutral-700 mb-2">説明</label>
+                <label className="block text-sm font-semibold text-neutral-700 mb-2">詳細説明</label>
                 <textarea
                   value={selectedTask.description || ''}
                   onChange={(e) => setSelectedTask({ ...selectedTask, description: e.target.value })}

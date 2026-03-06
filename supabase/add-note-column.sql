@@ -1,0 +1,2 @@
+-- tasksテーブルにnoteカラム追加
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS note TEXT;

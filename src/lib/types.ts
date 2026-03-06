@@ -70,6 +70,7 @@ export interface Task {
   id: string;
   title: string;
   description?: string;
+  note?: string; // 補足説明（テーブルで直接編集可能）
   
   // カテゴリ関連
   category: TaskCategory;
