@@ -479,11 +479,11 @@ export default function Home() {
           ) : (
             <div className="bg-white/95 backdrop-blur-sm overflow-x-auto w-full rounded-lg border border-neutral-200/50 shadow-sm">
               {/* テーブルヘッダー */}
-              <div className="grid grid-cols-12 gap-3 table-header items-center px-6">
-                <div className="col-span-5">タスク</div>
-                <div className="col-span-2 text-center">期限</div>
-                <div className="col-span-2 text-center">カテゴリ</div>
-                <div className="col-span-3 text-center">ステータス / 優先度</div>
+              <div className="grid grid-cols-12 gap-4 table-header items-center px-6" style={{ minHeight: '64px' }}>
+                <div className="col-span-5 flex items-center">タスク</div>
+                <div className="col-span-2 flex items-center justify-center">期限</div>
+                <div className="col-span-2 flex items-center justify-center">カテゴリ</div>
+                <div className="col-span-3 flex items-center justify-center">ステータス / 優先度</div>
               </div>
 
               {/* グループごとのテーブル */}
@@ -518,19 +518,19 @@ export default function Home() {
                         <div
                           key={task.id}
                           onClick={() => setSelectedTask(task)}
-                          className={`table-row grid grid-cols-12 gap-3 cursor-pointer px-6 ${overdueClass}`}
-                          style={{ minHeight: '72px', alignItems: 'center', display: 'grid' }}
+                          className={`table-row grid grid-cols-12 gap-4 cursor-pointer px-6 ${overdueClass}`}
+                          style={{ minHeight: '80px', alignItems: 'center' }}
                         >
                           {/* タスク名 + 補足 */}
-                          <div className="col-span-5 flex items-center">
+                          <div className="col-span-5 flex items-center py-4">
                             <div className="flex items-center gap-3 w-full">
-                              <div className={`accent-bar ${getAccentClass(task.business_type, task.category === '個人')}`} />
+                              <div className={`accent-bar ${getAccentClass(task.business_type, task.category === '個人')}`} style={{ minHeight: '56px' }} />
                               <div className="flex-1 min-w-0">
-                                <div className="font-medium text-neutral-900 mb-0.5">
+                                <div className="font-semibold text-neutral-900 mb-1 text-base">
                                   {task.title}
                                 </div>
                                 {task.description && (
-                                  <div className="text-xs text-neutral-400 line-clamp-1">
+                                  <div className="text-xs text-neutral-500 line-clamp-1 mt-0.5">
                                     {task.description.split('\n')[0]}
                                   </div>
                                 )}
@@ -539,52 +539,82 @@ export default function Home() {
                           </div>
 
                           {/* 期限 */}
-                          <div className="col-span-2 flex items-center justify-center">
+                          <div className="col-span-2 flex items-center justify-center py-4">
                             <input
                               type="date"
                               value={task.due_date ? task.due_date.split('T')[0] : ''}
                               onChange={(e) => handleUpdateField(task.id, 'due_date', e.target.value || null)}
                               onClick={(e) => e.stopPropagation()}
-                              className={`input py-2.5 text-sm w-full text-center ${
-                                isOverdue(task) ? 'border-danger-500 text-danger-600 font-semibold' : ''
+                              className={`input text-sm font-medium text-center ${
+                                isOverdue(task) ? 'border-danger-500 text-danger-600 font-bold bg-danger-50' : ''
                               }`}
-                              style={{ minHeight: '44px' }}
+                              style={{ height: '44px', padding: '0 12px', fontSize: '14px', width: '100%' }}
                             />
                           </div>
 
                           {/* カテゴリ */}
-                          <div className="col-span-2 flex items-center justify-center">
+                          <div className="col-span-2 flex items-center justify-center py-4">
                             {task.category === '事業' && task.business_type ? (
                               <span
-                                className="badge text-white font-semibold px-4 py-2"
-                                style={{ backgroundColor: getBusinessColor(task.business_type), minHeight: '36px', display: 'inline-flex', alignItems: 'center' }}
+                                className="badge text-white font-bold text-xs"
+                                style={{ 
+                                  backgroundColor: getBusinessColor(task.business_type), 
+                                  height: '40px',
+                                  padding: '0 18px',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  borderRadius: '10px',
+                                  boxShadow: '0 3px 10px rgba(0,0,0,0.08)'
+                                }}
                               >
                                 {task.business_type}
                               </span>
                             ) : (
-                              <span className="badge badge-secondary px-4 py-2" style={{ minHeight: '36px', display: 'inline-flex', alignItems: 'center' }}>
+                              <span 
+                                className="badge badge-secondary font-bold text-xs" 
+                                style={{ 
+                                  height: '40px',
+                                  padding: '0 18px',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  borderRadius: '10px',
+                                  boxShadow: '0 3px 10px rgba(0,0,0,0.08)'
+                                }}
+                              >
                                 {task.category}
                               </span>
                             )}
                           </div>
 
                           {/* ステータス + 優先度 */}
-                          <div className="col-span-3 flex items-center justify-center gap-3">
+                          <div className="col-span-3 flex items-center justify-center gap-3 py-4">
                             <select
                               value={task.status}
                               onChange={(e) => handleUpdateField(task.id, 'status', e.target.value)}
                               onClick={(e) => e.stopPropagation()}
-                              className={`select py-2.5 text-sm font-semibold cursor-pointer ${
+                              className={`select text-sm font-bold cursor-pointer ${
                                 task.status === '完了' ? 'status-done' :
                                 task.status === '進行中' ? 'status-progress' : 'status-todo'
                               }`}
-                              style={{ minHeight: '44px', flex: '1', maxWidth: '140px' }}
+                              style={{ 
+                                height: '44px',
+                                padding: '0 14px',
+                                fontSize: '14px',
+                                minWidth: '130px',
+                                maxWidth: '140px',
+                                borderRadius: '10px'
+                              }}
                             >
                               <option value="未着手">未着手</option>
                               <option value="進行中">進行中</option>
                               <option value="完了">完了</option>
                             </select>
-                            <span className="text-2xl flex-shrink-0">{priorityEmoji(task.priority)}</span>
+                            <span 
+                              className="text-3xl flex-shrink-0 drop-shadow-sm" 
+                              style={{ lineHeight: '1' }}
+                            >
+                              {priorityEmoji(task.priority)}
+                            </span>
                           </div>
                         </div>
                       );
@@ -1018,6 +1048,7 @@ export default function Home() {
                 このタスクを削除
               </button>
             </div>
+          </div>
           </div>
         </>
       )}
