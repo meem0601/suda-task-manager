@@ -723,10 +723,19 @@ export default function Home() {
         </div>
       </div>
 
-      {/* タスク詳細パネル */}
+      {/* タスク詳細パネル - バックドロップ */}
       {selectedTask && (
-        <div className="fixed inset-0 md:right-0 md:left-auto md:w-[500px] bg-white shadow-2xl z-50 overflow-y-auto md:border-l-2 border-neutral-200 animate-slideIn">
-          <div className="p-6 md:p-8">
+        <>
+          {/* バックドロップ（外側クリックで閉じる） */}
+          <div 
+            className="fixed inset-0 bg-black/20 z-40"
+            onClick={() => setSelectedTask(null)}
+            aria-label="Close task detail"
+          />
+          
+          {/* 詳細パネル本体 */}
+          <div className="fixed inset-0 md:right-0 md:left-auto md:w-[500px] bg-white shadow-2xl z-50 overflow-y-auto md:border-l-2 border-neutral-200 animate-slideIn">
+            <div className="p-6 md:p-8">
             {/* ヘッダー */}
             <div className="flex items-start justify-between mb-6">
               <div className="flex items-center gap-3">
@@ -1009,7 +1018,7 @@ export default function Home() {
               </button>
             </div>
           </div>
-        </div>
+        </>
       )}
 
       {/* タスク追加モーダル */}
