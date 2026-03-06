@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { supabase, Task, Subtask } from '@/lib/supabase';
+import { supabase, Task, Subtask, Comment } from '@/lib/supabase';
 import { validateTask, validateSubtaskTitle } from '@/lib/validation';
 import ViewSwitcher from '@/app/components/layout/ViewSwitcher';
 import { useKeyboardShortcuts } from '@/src/hooks/useKeyboardShortcuts';
@@ -14,10 +14,14 @@ export default function Home() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [subtasks, setSubtasks] = useState<Subtask[]>([]);
+  const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | '個人' | '事業'>('all');
   const [showAddModal, setShowAddModal] = useState(false);
   const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
+  const [newCommentContent, setNewCommentContent] = useState('');
+  const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
+  const [editingSubtaskTitle, setEditingSubtaskTitle] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   
   const [newTask, setNewTask] = useState({
@@ -36,6 +40,7 @@ export default function Home() {
   useEffect(() => {
     if (selectedTask) {
       fetchSubtasks(selectedTask.id);
+      fetchComments(selectedTask.id);
     }
   }, [selectedTask]);
 
@@ -81,6 +86,20 @@ export default function Home() {
       console.error('Error fetching subtasks:', error);
     } else {
       setSubtasks(data || []);
+    }
+  };
+
+  const fetchComments = async (taskId: string) => {
+    const { data, error } = await supabase
+      .from('comments')
+      .select('*')
+      .eq('task_id', taskId)
+      .order('created_at', { ascending: true }); // 時系列順（古い→新しい）
+
+    if (error) {
+      console.error('Error fetching comments:', error);
+    } else {
+      setComments(data || []);
     }
   };
 
@@ -951,9 +970,57 @@ export default function Home() {
                         }}
                         className="w-5 h-5 rounded border-neutral-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
                       />
-                      <span className={`flex-1 ${subtask.completed ? 'line-through text-neutral-400' : 'text-neutral-900'}`}>
-                        {subtask.title}
-                      </span>
+                      {editingSubtaskId === subtask.id ? (
+                        /* 編集モード */
+                        <input
+                          type="text"
+                          value={editingSubtaskTitle}
+                          onChange={(e) => setEditingSubtaskTitle(e.target.value)}
+                          onBlur={async () => {
+                            if (editingSubtaskTitle.trim() === '') {
+                              setEditingSubtaskId(null);
+                              return;
+                            }
+                            const validation = validateSubtaskTitle(editingSubtaskTitle);
+                            if (!validation.valid) {
+                              toast.error('入力エラー', validation.error);
+                              setEditingSubtaskId(null);
+                              return;
+                            }
+                            const { error } = await supabase
+                              .from('subtasks')
+                              .update({ title: editingSubtaskTitle.trim() })
+                              .eq('id', subtask.id);
+                            if (!error) {
+                              toast.success('サブタスクを更新しました', editingSubtaskTitle);
+                              fetchSubtasks(selectedTask.id);
+                            } else {
+                              toast.error('更新に失敗しました', error.message);
+                            }
+                            setEditingSubtaskId(null);
+                          }}
+                          onKeyPress={async (e) => {
+                            if (e.key === 'Enter') {
+                              e.currentTarget.blur();
+                            }
+                          }}
+                          className="flex-1 px-2 py-1 border border-primary-300 rounded focus:outline-none focus:ring-2 focus:ring-primary-500"
+                          autoFocus
+                        />
+                      ) : (
+                        /* 表示モード */
+                        <span
+                          onClick={() => {
+                            setEditingSubtaskId(subtask.id);
+                            setEditingSubtaskTitle(subtask.title);
+                          }}
+                          className={`flex-1 cursor-pointer hover:text-primary-600 ${
+                            subtask.completed ? 'line-through text-neutral-400' : 'text-neutral-900'
+                          }`}
+                        >
+                          {subtask.title}
+                        </span>
+                      )}
                       <button
                         onClick={async () => {
                           if (confirm('このサブタスクを削除しますか？')) {
@@ -962,7 +1029,10 @@ export default function Home() {
                               .delete()
                               .eq('id', subtask.id);
                             if (!error) {
+                              toast.success('サブタスクを削除しました');
                               fetchSubtasks(selectedTask.id);
+                            } else {
+                              toast.error('削除に失敗しました', error.message);
                             }
                           }
                         }}
@@ -1032,6 +1102,123 @@ export default function Home() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                     </svg>
                   </button>
+                </div>
+              </div>
+
+              <div className="divider" />
+
+              {/* コメントセクション */}
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-neutral-900">コメント</h3>
+                  <span className="badge badge-neutral">{comments.length}</span>
+                </div>
+
+                {/* コメント一覧 */}
+                <div className="space-y-3 mb-4 max-h-[400px] overflow-y-auto">
+                  {comments.length === 0 ? (
+                    <div className="text-center py-8 text-neutral-400 text-sm">
+                      まだコメントがありません
+                    </div>
+                  ) : (
+                    comments.map((comment) => (
+                      <div
+                        key={comment.id}
+                        className="p-4 rounded-lg bg-neutral-50 border border-neutral-200"
+                      >
+                        <div className="text-sm text-neutral-900 whitespace-pre-wrap mb-2">
+                          {comment.content}
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-neutral-500">
+                            {new Date(comment.created_at).toLocaleString('ja-JP', {
+                              year: 'numeric',
+                              month: '2-digit',
+                              day: '2-digit',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </span>
+                          <button
+                            onClick={async () => {
+                              if (confirm('このコメントを削除しますか？')) {
+                                const { error } = await supabase
+                                  .from('comments')
+                                  .delete()
+                                  .eq('id', comment.id);
+                                if (!error) {
+                                  toast.success('コメントを削除しました');
+                                  fetchComments(selectedTask.id);
+                                } else {
+                                  toast.error('削除に失敗しました', error.message);
+                                }
+                              }
+                            }}
+                            className="text-xs text-neutral-400 hover:text-danger-600 transition-colors"
+                          >
+                            削除
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {/* コメント追加フォーム */}
+                <div className="space-y-2">
+                  <textarea
+                    value={newCommentContent}
+                    onChange={(e) => setNewCommentContent(e.target.value)}
+                    onKeyPress={async (e) => {
+                      if (e.key === 'Enter' && e.ctrlKey && newCommentContent.trim()) {
+                        const { error } = await supabase
+                          .from('comments')
+                          .insert([{
+                            task_id: selectedTask.id,
+                            content: newCommentContent.trim()
+                          }]);
+                        if (!error) {
+                          toast.success('コメントを追加しました');
+                          setNewCommentContent('');
+                          fetchComments(selectedTask.id);
+                        } else {
+                          toast.error('コメントの追加に失敗しました', error.message);
+                        }
+                      }
+                    }}
+                    className="textarea w-full"
+                    rows={3}
+                    placeholder="コメントを入力... (Ctrl+Enterで送信)"
+                  />
+                  <div className="flex justify-end">
+                    <button
+                      onClick={async () => {
+                        if (!newCommentContent.trim()) {
+                          toast.error('入力エラー', 'コメントを入力してください');
+                          return;
+                        }
+                        const { error } = await supabase
+                          .from('comments')
+                          .insert([{
+                            task_id: selectedTask.id,
+                            content: newCommentContent.trim()
+                          }]);
+                        if (!error) {
+                          toast.success('コメントを追加しました');
+                          setNewCommentContent('');
+                          fetchComments(selectedTask.id);
+                        } else {
+                          toast.error('コメントの追加に失敗しました', error.message);
+                        }
+                      }}
+                      className="btn btn-primary"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                      </svg>
+                      送信
+                    </button>
+                  </div>
                 </div>
               </div>
 

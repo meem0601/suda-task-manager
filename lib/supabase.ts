@@ -18,6 +18,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 export type { 
   Task,
   Subtask,
+  Comment,
   Notification,
   PushSubscription,
   TaskStatus,

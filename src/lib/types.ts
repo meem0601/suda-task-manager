@@ -109,6 +109,15 @@ export interface Subtask {
   completed_at?: string;
 }
 
+/** コメント */
+export interface Comment {
+  id: string;
+  task_id: string;
+  content: string;
+  created_at: string;
+  updated_at: string;
+}
+
 /** タスク-タグ中間テーブル */
 export interface TaskTag {
   task_id: string;
