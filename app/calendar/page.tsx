@@ -17,6 +17,8 @@ import {
 } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import ViewSwitcher from '../components/layout/ViewSwitcher';
+import LoadingSkeleton from '@/src/components/common/LoadingSkeleton';
+import EmptyState from '@/src/components/common/EmptyState';
 
 export default function CalendarPage() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -78,8 +80,14 @@ export default function CalendarPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-neutral-50">
-        <div className="spinner spinner-lg" />
+      <div className="min-h-screen bg-neutral-50 p-4 md:p-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="mb-8">
+            <div className="h-10 bg-neutral-200 rounded-lg w-64 mb-2 animate-pulse" />
+            <div className="h-6 bg-neutral-200 rounded-lg w-32 animate-pulse" />
+          </div>
+          <LoadingSkeleton type="dashboard" />
+        </div>
       </div>
     );
   }
@@ -220,10 +228,7 @@ export default function CalendarPage() {
 
               <div className="space-y-3">
                 {dayTasks.length === 0 ? (
-                  <div className="text-center py-12 text-neutral-500">
-                    <div className="text-5xl mb-2">📭</div>
-                    <p>この日のタスクはありません</p>
-                  </div>
+                  <EmptyState type="calendar" showButton={false} />
                 ) : (
                   dayTasks.map((task) => (
                     <div

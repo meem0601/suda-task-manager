@@ -8,6 +8,7 @@ import { Task } from '@/src/lib/types';
 import BoardColumn from '../components/board/BoardColumn';
 import TaskCard from '../components/board/TaskCard';
 import ViewSwitcher from '../components/layout/ViewSwitcher';
+import LoadingSkeleton from '@/src/components/common/LoadingSkeleton';
 
 type ColumnId = '未着手' | '進行中' | 'レビュー中' | '完了';
 
@@ -88,8 +89,14 @@ export default function BoardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-neutral-50">
-        <div className="spinner spinner-lg" />
+      <div className="min-h-screen bg-neutral-50 p-4 md:p-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="mb-8">
+            <div className="h-10 bg-neutral-200 rounded-lg w-64 mb-2 animate-pulse" />
+            <div className="h-6 bg-neutral-200 rounded-lg w-96 animate-pulse" />
+          </div>
+          <LoadingSkeleton type="board" />
+        </div>
       </div>
     );
   }

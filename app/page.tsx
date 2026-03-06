@@ -4,6 +4,11 @@ import { useEffect, useState } from 'react';
 import { supabase, Task, Subtask } from '@/lib/supabase';
 import { validateTask, validateSubtaskTitle } from '@/lib/validation';
 import ViewSwitcher from '@/app/components/layout/ViewSwitcher';
+import { useKeyboardShortcuts } from '@/src/hooks/useKeyboardShortcuts';
+import EmptyState from '@/src/components/common/EmptyState';
+import LoadingSkeleton from '@/src/components/common/LoadingSkeleton';
+import { toast } from '@/src/stores/toastStore';
+import DarkModeToggle from '@/src/components/common/DarkModeToggle';
 
 export default function Home() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -33,6 +38,16 @@ export default function Home() {
       fetchSubtasks(selectedTask.id);
     }
   }, [selectedTask]);
+
+  // キーボードショートカット
+  useKeyboardShortcuts({
+    onAddTask: () => setShowAddModal(true),
+    onSearch: () => {}, // 検索機能は今後実装
+    onEscape: () => {
+      setShowAddModal(false);
+      setSelectedTask(null);
+    },
+  });
 
   const fetchTasks = async () => {
     setLoading(true);
@@ -72,7 +87,7 @@ export default function Home() {
   const handleAddTask = async () => {
     const validation = validateTask(newTask);
     if (!validation.valid) {
-      alert(validation.error);
+      toast.error('入力エラー', validation.error);
       return;
     }
 
@@ -88,9 +103,10 @@ export default function Home() {
 
     if (error) {
       console.error('Error adding task:', error);
-      alert('タスクの追加に失敗しました');
+      toast.error('タスクの追加に失敗しました', error.message);
     } else {
       setShowAddModal(false);
+      toast.success('タスクを追加しました', newTask.title);
       setNewTask({
         title: '',
         description: '',
@@ -116,11 +132,22 @@ export default function Home() {
 
     if (error) {
       console.error('Error updating field:', error);
+      toast.error('更新に失敗しました', error.message);
     } else {
       fetchTasks();
       if (selectedTask?.id === taskId) {
         const updatedTask = { ...selectedTask, [field]: value };
         setSelectedTask(updatedTask);
+      }
+      
+      // ステータス変更時のみToast表示
+      if (field === 'status') {
+        const task = tasks.find(t => t.id === taskId);
+        if (value === '完了') {
+          toast.success('タスクを完了しました！🎉', task?.title);
+        } else {
+          toast.info(`ステータスを「${value}」に変更しました`, task?.title);
+        }
       }
     }
   };
@@ -130,6 +157,10 @@ export default function Home() {
       return;
     }
 
+    // バックアップ（Undo用）
+    const taskToDelete = tasks.find(t => t.id === taskId);
+    const subtasksToDelete = subtasks.filter(st => st.task_id === taskId);
+
     const { error: subtaskError } = await supabase
       .from('subtasks')
       .delete()
@@ -137,6 +168,7 @@ export default function Home() {
 
     if (subtaskError) {
       console.error('Error deleting subtasks:', subtaskError);
+      toast.error('サブタスクの削除に失敗しました', subtaskError.message);
       return;
     }
 
@@ -147,9 +179,31 @@ export default function Home() {
 
     if (error) {
       console.error('Error deleting task:', error);
+      toast.error('タスクの削除に失敗しました', error.message);
     } else {
       setSelectedTask(null);
       fetchTasks();
+      
+      // Undo対応のToast
+      toast.success('タスクを削除しました', taskToDelete?.title, async () => {
+        // Undo処理
+        if (taskToDelete) {
+          const { error: restoreError } = await supabase
+            .from('tasks')
+            .insert([taskToDelete]);
+          
+          if (!restoreError && subtasksToDelete.length > 0) {
+            await supabase.from('subtasks').insert(subtasksToDelete);
+          }
+          
+          if (!restoreError) {
+            toast.info('タスクを復元しました');
+            fetchTasks();
+          } else {
+            toast.error('復元に失敗しました', restoreError.message);
+          }
+        }
+      });
     }
   };
 
@@ -396,6 +450,7 @@ export default function Home() {
             </div>
 
             <div className="flex gap-2 items-center">
+              <DarkModeToggle />
               <ViewSwitcher className="hidden md:flex" />
               <button
                 onClick={() => setShowAddModal(true)}
@@ -414,8 +469,12 @@ export default function Home() {
         {/* テーブルビュー（PCのみ） */}
         <div className="hidden md:flex flex-1 overflow-auto">
           {loading ? (
-            <div className="flex items-center justify-center h-full w-full">
-              <div className="spinner spinner-lg" />
+            <div className="w-full p-6">
+              <LoadingSkeleton type="list" count={8} />
+            </div>
+          ) : tasks.length === 0 ? (
+            <div className="w-full flex items-center justify-center">
+              <EmptyState type="tasks" onAddTask={() => setShowAddModal(true)} />
             </div>
           ) : (
             <div className="bg-white/95 backdrop-blur-sm overflow-x-auto w-full rounded-lg border border-neutral-200/50 shadow-sm">
@@ -547,14 +606,6 @@ export default function Home() {
                   </div>
                 );
               })}
-
-              {tasks.length === 0 && (
-                <div className="text-center py-16 text-neutral-500">
-                  <div className="text-5xl mb-4">📭</div>
-                  <p className="text-lg font-medium">タスクがありません</p>
-                  <p className="text-sm mt-2">「+ タスク追加」から新しいタスクを作成しましょう</p>
-                </div>
-              )}
             </div>
           )}
         </div>
@@ -562,8 +613,12 @@ export default function Home() {
         {/* カード型ビュー（スマホのみ） */}
         <div className="md:hidden flex-1 overflow-auto bg-neutral-50">
           {loading ? (
+            <div className="p-4">
+              <LoadingSkeleton type="card" count={5} />
+            </div>
+          ) : tasks.length === 0 ? (
             <div className="flex items-center justify-center h-full">
-              <div className="spinner spinner-lg" />
+              <EmptyState type="tasks" onAddTask={() => setShowAddModal(true)} />
             </div>
           ) : (
             <div className="p-4 space-y-6">
@@ -663,14 +718,6 @@ export default function Home() {
                   </div>
                 );
               })}
-
-              {tasks.length === 0 && (
-                <div className="text-center py-16 text-neutral-500">
-                  <div className="text-5xl mb-4">📭</div>
-                  <p className="text-lg font-medium">タスクがありません</p>
-                  <p className="text-sm mt-2">「追加」ボタンから新しいタスクを作成しましょう</p>
-                </div>
-              )}
             </div>
           )}
         </div>
