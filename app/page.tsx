@@ -9,6 +9,23 @@ import EmptyState from '@/src/components/common/EmptyState';
 import LoadingSkeleton from '@/src/components/common/LoadingSkeleton';
 import { toast } from '@/src/stores/toastStore';
 import DarkModeToggle from '@/src/components/common/DarkModeToggle';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 export default function Home() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -300,6 +317,65 @@ export default function Home() {
       }
       return newSet;
     });
+  };
+
+  // ドラッグ&ドロップのセンサー設定
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // 8px移動したらドラッグ開始
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // ドラッグ終了時の処理
+  const handleDragEnd = async (event: DragEndEvent, groupName: string) => {
+    const { active, over } = event;
+
+    if (!over || active.id === over.id) {
+      return;
+    }
+
+    const groupTasks = groupedTasks[groupName];
+    const oldIndex = groupTasks.findIndex(t => t.id === active.id);
+    const newIndex = groupTasks.findIndex(t => t.id === over.id);
+
+    if (oldIndex === -1 || newIndex === -1) {
+      return;
+    }
+
+    // ローカル状態を即座に更新
+    const reorderedTasks = arrayMove(groupTasks, oldIndex, newIndex);
+    
+    // 全タスクリストを更新
+    const updatedAllTasks = tasks.map(task => {
+      const taskInGroup = reorderedTasks.find(t => t.id === task.id);
+      if (taskInGroup) {
+        const newSortOrder = reorderedTasks.indexOf(taskInGroup);
+        return { ...task, sort_order: newSortOrder };
+      }
+      return task;
+    });
+
+    setTasks(updatedAllTasks);
+
+    // DBに反映
+    const updates = reorderedTasks.map((task, index) => ({
+      id: task.id,
+      sort_order: index,
+    }));
+
+    for (const update of updates) {
+      await supabase
+        .from('tasks')
+        .update({ sort_order: update.sort_order })
+        .eq('id', update.id);
+    }
+
+    toast.success('並び順を変更しました');
   };
 
   return (
