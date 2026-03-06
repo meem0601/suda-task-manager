@@ -1,6 +1,17 @@
 /* デザインシステムをインポート */
 @import './design-system.css';
 
+/* 全体的なフォントサイズ調整（Notion風に小さく） */
+html {
+  font-size: 14px !important; /* デフォルトを16pxから14pxに */
+}
+
+@media (max-width: 768px) {
+  html {
+    font-size: 13px !important; /* スマホでさらに小さく */
+  }
+}
+
 /* アニメーション追加 */
 @keyframes slideIn {
   from {
