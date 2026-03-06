@@ -418,17 +418,29 @@ body {
 }
 
 .sidebar {
-  width: 16rem;
   background-color: white;
   border-right: 1px solid var(--color-neutral-200);
   display: flex;
   flex-direction: column;
+  transition: width 300ms ease-out;
 }
 
-/* モバイル用サイドバーアニメーション */
+.sidebar-open {
+  width: 16rem;
+}
+
+.sidebar-closed {
+  width: 3.5rem;
+}
+
+/* モバイル用サイドバー */
 @media (max-width: 768px) {
-  .sidebar {
+  .sidebar-open {
     animation: slideInFromLeft 300ms ease-out;
+  }
+  
+  .sidebar-closed {
+    display: none; /* モバイルでは閉じたら完全に非表示 */
   }
 }
 

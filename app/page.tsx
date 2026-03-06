@@ -240,13 +240,28 @@ export default function Home() {
       )}
 
       {/* 左サイドバー */}
-      {sidebarOpen && (
-        <div className="sidebar fixed md:relative z-50 md:z-auto">
-          {/* ロゴ */}
-          <div className="p-6 border-b border-neutral-200">
-            <h1 className="text-xl font-bold text-neutral-900">タスク管理</h1>
-            <p className="text-xs text-neutral-500 mt-1">須田 專用</p>
-          </div>
+      <div className={`sidebar ${sidebarOpen ? 'sidebar-open' : 'sidebar-closed'} fixed md:relative z-50 md:z-auto`}>
+        {sidebarOpen ? (
+          <>
+            {/* ロゴ */}
+            <div className="p-6 border-b border-neutral-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-xl font-bold text-neutral-900">タスク管理</h1>
+                  <p className="text-xs text-neutral-500 mt-1">須田 專用</p>
+                </div>
+                {/* PC用閉じるボタン */}
+                <button
+                  onClick={() => setSidebarOpen(false)}
+                  className="hidden md:flex btn-ghost p-2 rounded-lg hover:bg-neutral-100 transition-colors"
+                  aria-label="Close sidebar"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+              </div>
+            </div>
 
           {/* ナビゲーション */}
           <div className="flex-1 p-4 space-y-1">
@@ -306,15 +321,29 @@ export default function Home() {
             })}
           </div>
 
-          {/* フッター */}
-          <div className="p-4 border-t border-neutral-200">
-            <div className="flex items-center gap-2 text-sm text-neutral-600">
-              <div className="w-2 h-2 rounded-full bg-success-500 animate-pulse-soft" />
-              <span>{tasks.filter(t => t.status !== '完了').length}個のアクティブタスク</span>
+            {/* フッター */}
+            <div className="p-4 border-t border-neutral-200">
+              <div className="flex items-center gap-2 text-sm text-neutral-600">
+                <div className="w-2 h-2 rounded-full bg-success-500 animate-pulse-soft" />
+                <span>{tasks.filter(t => t.status !== '完了').length}個のアクティブタスク</span>
+              </div>
             </div>
+          </>
+        ) : (
+          /* 閉じた時の細いバー（PC用） */
+          <div className="hidden md:flex flex-col items-center py-6 gap-4 w-full">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="btn-ghost p-2 rounded-lg hover:bg-neutral-100 transition-colors"
+              aria-label="Open sidebar"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* メインコンテンツ */}
       <div className="flex-1 flex flex-col overflow-hidden">
