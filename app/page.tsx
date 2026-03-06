@@ -757,17 +757,60 @@ export default function Home() {
 
               {/* カテゴリ */}
               <div>
-                <label className="block text-sm font-semibold text-neutral-700 mb-2">カテゴリ</label>
-                <div className="flex gap-3">
-                  {selectedTask.category === '個人' ? (
-                    <span className="badge badge-secondary">👤 個人</span>
-                  ) : (
-                    <span
-                      className="badge text-white font-semibold"
-                      style={{ backgroundColor: getBusinessColor(selectedTask.business_type) }}
-                    >
-                      🏢 {selectedTask.business_type || '事業'}
-                    </span>
+                <label className="block text-sm font-semibold text-neutral-700 mb-3">カテゴリ</label>
+                <div className="space-y-3">
+                  {/* 個人/事業 選択 */}
+                  <div className="flex gap-4">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        checked={selectedTask.category === '個人'}
+                        onChange={() => {
+                          const updated = { ...selectedTask, category: '個人' as '個人' | '事業', business_type: undefined };
+                          setSelectedTask(updated);
+                          handleUpdateField(selectedTask.id, 'category', '個人');
+                          handleUpdateField(selectedTask.id, 'business_type', null);
+                        }}
+                        className="w-4 h-4 text-primary-600 focus:ring-primary-500"
+                      />
+                      <span className="text-sm font-medium">👤 個人</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        checked={selectedTask.category === '事業'}
+                        onChange={() => {
+                          const updated = { ...selectedTask, category: '事業' as '個人' | '事業' };
+                          setSelectedTask(updated);
+                          handleUpdateField(selectedTask.id, 'category', '事業');
+                        }}
+                        className="w-4 h-4 text-primary-600 focus:ring-primary-500"
+                      />
+                      <span className="text-sm font-medium">🏢 事業</span>
+                    </label>
+                  </div>
+
+                  {/* 事業種別 選択（事業の場合のみ） */}
+                  {selectedTask.category === '事業' && (
+                    <div>
+                      <label className="block text-sm font-medium text-neutral-600 mb-2">事業種別</label>
+                      <select
+                        value={selectedTask.business_type || ''}
+                        onChange={(e) => {
+                          const value = e.target.value as Task['business_type'];
+                          setSelectedTask({ ...selectedTask, business_type: value });
+                          handleUpdateField(selectedTask.id, 'business_type', value || null);
+                        }}
+                        className="select"
+                      >
+                        <option value="">選択してください</option>
+                        <option value="不動産">不動産</option>
+                        <option value="人材">人材</option>
+                        <option value="経済圏">経済圏</option>
+                        <option value="結婚相談所">結婚相談所</option>
+                        <option value="コーポレート">コーポレート</option>
+                      </select>
+                    </div>
                   )}
                 </div>
               </div>
