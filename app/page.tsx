@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { supabase, Task, Subtask } from '@/lib/supabase';
 import { validateTask, validateSubtaskTitle } from '@/lib/validation';
+import ViewSwitcher from '@/app/components/layout/ViewSwitcher';
 
 export default function Home() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -363,10 +364,10 @@ export default function Home() {
               </button>
               
               <div>
-                <h2 className="text-lg md:text-xl font-semibold text-neutral-900">
+                <h2 className="text-xl md:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600">
                   {filter === 'all' ? 'すべてのタスク' : filter === '個人' ? '個人タスク' : '事業タスク'}
                 </h2>
-                <p className="text-xs text-neutral-500 mt-0.5">
+                <p className="text-sm text-neutral-600 mt-0.5 font-semibold">
                   {new Date().toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' })}
                 </p>
               </div>
@@ -394,16 +395,19 @@ export default function Home() {
               </button>
             </div>
 
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="btn btn-primary"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              <span className="hidden md:inline">タスク追加</span>
-              <span className="md:hidden">追加</span>
-            </button>
+            <div className="flex gap-2 items-center">
+              <ViewSwitcher className="hidden md:flex" />
+              <button
+                onClick={() => setShowAddModal(true)}
+                className="btn btn-primary"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                <span className="hidden md:inline">タスク追加</span>
+                <span className="md:hidden">追加</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -519,7 +523,7 @@ export default function Home() {
                                 <option value="進行中">進行中</option>
                                 <option value="完了">完了</option>
                               </select>
-                              <span className="text-xl flex-shrink-0">{priorityEmoji(task.priority)}</span>
+                              <span className="text-2xl flex-shrink-0">{priorityEmoji(task.priority)}</span>
                             </div>
                           </div>
                         </div>
@@ -636,7 +640,7 @@ export default function Home() {
                                 {/* 優先度 */}
                                 {task.priority && (
                                   <span className="badge badge-neutral flex items-center gap-1">
-                                    <span className="text-sm">{priorityEmoji(task.priority)}</span>
+                                    <span className="text-lg">{priorityEmoji(task.priority)}</span>
                                     <span>{task.priority}</span>
                                   </span>
                                 )}
