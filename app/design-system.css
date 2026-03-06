@@ -1,9 +1,11 @@
 /**
  * 須田タスク管理 - Monday.com Sidekick風デザインシステム
- * Tailwind CSS v4 対応版
+ * Tailwind CSS v3 対応版
  */
 
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 /* ========================================
    1. CSS Variables (Design Tokens) - Pastel Colors
