@@ -227,9 +227,9 @@ export default function Home() {
 
   return (
     <div className="flex h-screen bg-gray-50">
-      {/* 左サイドバー（Monday.com風） */}
+      {/* 左サイドバー（Monday.com風） - デスクトップのみ */}
       {sidebarOpen && (
-        <div className="w-64 bg-white border-r border-gray-200 flex flex-col">
+        <div className="hidden md:flex w-64 bg-white border-r border-gray-200 flex-col">
           {/* ロゴ */}
           <div className="p-4 border-b border-gray-200">
             <h1 className="text-xl font-bold text-gray-900">タスク管理</h1>
@@ -275,37 +275,66 @@ export default function Home() {
       {/* メインコンテンツ */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* 上部ツールバー（Monday.com風） */}
-        <div className="bg-white border-b border-gray-200 px-6 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+        <div className="bg-white border-b border-gray-200 px-4 md:px-6 py-3">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-2 md:gap-4">
+              {/* サイドバー開閉（PCのみ） */}
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="text-gray-500 hover:text-gray-700"
+                className="hidden md:block text-gray-500 hover:text-gray-700"
               >
                 ☰
               </button>
-              <h2 className="text-lg font-semibold text-gray-900">
+              <h2 className="text-lg md:text-xl font-semibold text-gray-900">
                 {filter === 'all' ? 'すべてのタスク' : filter === '個人' ? '個人タスク' : '事業タスク'}
               </h2>
             </div>
 
+            {/* モバイル用フィルタ */}
+            <div className="flex md:hidden gap-1">
+              <button
+                onClick={() => setFilter('all')}
+                className={`px-3 py-1 rounded text-xs font-medium ${
+                  filter === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'
+                }`}
+              >
+                すべて
+              </button>
+              <button
+                onClick={() => setFilter('個人')}
+                className={`px-3 py-1 rounded text-xs font-medium ${
+                  filter === '個人' ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-700'
+                }`}
+              >
+                個人
+              </button>
+              <button
+                onClick={() => setFilter('事業')}
+                className={`px-3 py-1 rounded text-xs font-medium ${
+                  filter === '事業' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'
+                }`}
+              >
+                事業
+              </button>
+            </div>
+
             <button
               onClick={() => setShowAddModal(true)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+              className="px-3 md:px-4 py-2 bg-blue-600 text-white rounded-lg text-xs md:text-sm font-medium hover:bg-blue-700 transition-colors"
             >
               + タスク追加
             </button>
           </div>
         </div>
 
-        {/* テーブルビュー */}
-        <div className="flex-1 overflow-auto">
+        {/* テーブルビュー（PCのみ） */}
+        <div className="hidden md:flex flex-1 overflow-auto">
           {loading ? (
-            <div className="flex items-center justify-center h-full">
+            <div className="flex items-center justify-center h-full w-full">
               <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
             </div>
           ) : (
-            <div className="bg-white">
+            <div className="bg-white overflow-x-auto w-full">
               {/* テーブルヘッダー */}
               <div className="grid grid-cols-12 gap-4 px-6 py-3 bg-[#F6F7FB] border-b border-gray-200 font-semibold text-xs text-gray-600 uppercase tracking-wider sticky top-0 z-10">
                 <div className="col-span-5">タスク</div>
@@ -434,11 +463,127 @@ export default function Home() {
             </div>
           )}
         </div>
+
+        {/* カード型ビュー（スマホのみ） */}
+        <div className="md:hidden flex-1 overflow-auto">
+          {loading ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+            </div>
+          ) : (
+            <div className="p-4 space-y-6">
+              {Object.entries(groupedTasks).map(([groupName, groupTasks]) => {
+                if (groupTasks.length === 0) return null;
+                const isCollapsed = collapsedGroups.has(groupName);
+
+                return (
+                  <div key={groupName}>
+                    {/* グループヘッダー */}
+                    <div
+                      className="flex items-center justify-between mb-3 cursor-pointer"
+                      onClick={() => toggleGroup(groupName)}
+                    >
+                      <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                        <span className="transition-transform" style={{ transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)' }}>
+                          ▼
+                        </span>
+                        {groupName}
+                      </h3>
+                      <span className="text-sm text-gray-500">({groupTasks.length})</span>
+                    </div>
+
+                    {/* グループのタスク（カード型） */}
+                    {!isCollapsed && (
+                      <div className="space-y-3">
+                        {groupTasks.map((task) => {
+                          const colors = statusColor(task.status);
+                          const overdueStyle = isOverdue(task) ? 'border-red-500 bg-red-50' : '';
+
+                          return (
+                            <div
+                              key={task.id}
+                              onClick={() => setSelectedTask(task)}
+                              className={`bg-white rounded-lg p-4 shadow-sm border-2 border-gray-200 ${overdueStyle} active:bg-gray-50 cursor-pointer`}
+                            >
+                              {/* カラーバー + タイトル */}
+                              <div className="flex items-start gap-2 mb-3">
+                                <div
+                                  className="w-1 h-full min-h-[40px] rounded-full"
+                                  style={{ backgroundColor: getBusinessColor(task.category === '個人' ? undefined : task.business_type) }}
+                                />
+                                <div className="flex-1">
+                                  <h4 className="font-semibold text-gray-900 mb-1">{task.title}</h4>
+                                  {task.description && (
+                                    <p className="text-sm text-gray-600 line-clamp-2">{task.description}</p>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* メタ情報 */}
+                              <div className="flex flex-wrap gap-2">
+                                {/* ステータス */}
+                                <span
+                                  className="px-3 py-1 rounded text-xs font-medium"
+                                  style={{ backgroundColor: colors.bg, color: colors.text }}
+                                >
+                                  {task.status}
+                                </span>
+
+                                {/* カテゴリ */}
+                                {task.category === '事業' && task.business_type ? (
+                                  <span
+                                    className="px-3 py-1 rounded text-xs font-medium text-white"
+                                    style={{ backgroundColor: getBusinessColor(task.business_type) }}
+                                  >
+                                    {task.business_type}
+                                  </span>
+                                ) : (
+                                  <span className="px-3 py-1 rounded text-xs font-medium bg-purple-100 text-purple-700">
+                                    {task.category}
+                                  </span>
+                                )}
+
+                                {/* 優先度 */}
+                                {task.priority && (
+                                  <span className="flex items-center gap-1 px-3 py-1 rounded text-xs font-medium bg-gray-100 text-gray-700">
+                                    <span className="text-sm">{priorityEmoji(task.priority)}</span>
+                                    <span>{task.priority}</span>
+                                  </span>
+                                )}
+
+                                {/* 期限 */}
+                                {task.due_date && (
+                                  <span className={`flex items-center gap-1 px-3 py-1 rounded text-xs font-medium ${
+                                    isOverdue(task) ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'
+                                  }`}>
+                                    📅 {formatDate(task.due_date)}
+                                    {isOverdue(task) && ' ⚠️'}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+
+              {tasks.length === 0 && (
+                <div className="text-center py-12 text-gray-500">
+                  <p className="text-lg mb-2">📭</p>
+                  <p>タスクがありません</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* タスク詳細パネル */}
       {selectedTask && (
-        <div className="fixed right-0 top-0 bottom-0 w-[500px] bg-white shadow-2xl z-50 overflow-y-auto border-l border-gray-200">
+        <div className="fixed inset-0 md:right-0 md:left-auto md:w-[500px] bg-white shadow-2xl z-50 overflow-y-auto md:border-l border-gray-200">
           <div className="p-6">
             <div className="flex items-start justify-between mb-6">
               <h2 className="text-2xl font-bold text-gray-900">タスク詳細</h2>
