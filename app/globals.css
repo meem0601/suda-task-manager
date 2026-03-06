@@ -12,6 +12,11 @@ html {
   }
 }
 
+/* Notion風の柔らかい背景 */
+body {
+  background-color: #fafafa;
+}
+
 /* アニメーション追加 */
 @keyframes slideIn {
   from {

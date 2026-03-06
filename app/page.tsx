@@ -414,7 +414,7 @@ export default function Home() {
               <div className="spinner spinner-lg" />
             </div>
           ) : (
-            <div className="bg-white overflow-x-auto w-full">
+            <div className="bg-white/95 backdrop-blur-sm overflow-x-auto w-full rounded-lg border border-neutral-200/50 shadow-sm">
               {/* テーブルヘッダー */}
               <div className="grid grid-cols-12 gap-4 table-header items-center px-4">
                 <div className="col-span-6">タスク</div>
@@ -457,17 +457,17 @@ export default function Home() {
                           onClick={() => setSelectedTask(task)}
                           className={`table-row grid grid-cols-12 gap-4 cursor-pointer items-center px-4 ${overdueClass}`}
                         >
-                          {/* タスク名 + 説明 */}
+                          {/* タスク名 + 補足 */}
                           <div className="col-span-6 table-cell">
                             <div className="flex items-start gap-3">
                               <div className={`accent-bar ${getAccentClass(task.business_type, task.category === '個人')}`} />
                               <div className="flex-1 min-w-0">
-                                <div className="font-medium text-neutral-900 mb-1">
+                                <div className="font-medium text-neutral-900 mb-0.5">
                                   {task.title}
                                 </div>
                                 {task.description && (
-                                  <div className="text-sm text-neutral-500 truncate-2">
-                                    {task.description}
+                                  <div className="text-xs text-neutral-400 line-clamp-1">
+                                    {task.description.split('\n')[0]}
                                   </div>
                                 )}
                               </div>
