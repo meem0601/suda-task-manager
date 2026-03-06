@@ -416,11 +416,11 @@ export default function Home() {
           ) : (
             <div className="bg-white overflow-x-auto w-full">
               {/* テーブルヘッダー */}
-              <div className="grid grid-cols-12 gap-4 table-header">
+              <div className="grid grid-cols-12 gap-4 table-header items-center px-4">
                 <div className="col-span-6">タスク</div>
-                <div className="col-span-2 text-center">期限</div>
-                <div className="col-span-2 text-center">カテゴリ</div>
-                <div className="col-span-2 text-center">ステータス / 優先度</div>
+                <div className="col-span-2">期限</div>
+                <div className="col-span-2">カテゴリ</div>
+                <div className="col-span-2">ステータス / 優先度</div>
               </div>
 
               {/* グループごとのテーブル */}
@@ -455,7 +455,7 @@ export default function Home() {
                         <div
                           key={task.id}
                           onClick={() => setSelectedTask(task)}
-                          className={`table-row grid grid-cols-12 gap-4 cursor-pointer ${overdueClass}`}
+                          className={`table-row grid grid-cols-12 gap-4 cursor-pointer items-center px-4 ${overdueClass}`}
                         >
                           {/* タスク名 + 説明 */}
                           <div className="col-span-6 table-cell">
@@ -475,20 +475,20 @@ export default function Home() {
                           </div>
 
                           {/* 期限 */}
-                          <div className="col-span-2 table-cell flex items-center justify-center">
+                          <div className="col-span-2 table-cell">
                             <input
                               type="date"
                               value={task.due_date ? task.due_date.split('T')[0] : ''}
                               onChange={(e) => handleUpdateField(task.id, 'due_date', e.target.value || null)}
                               onClick={(e) => e.stopPropagation()}
-                              className={`input py-1.5 text-sm ${
+                              className={`input py-1.5 text-sm w-full ${
                                 isOverdue(task) ? 'border-danger-500 text-danger-600 font-semibold' : ''
                               }`}
                             />
                           </div>
 
                           {/* カテゴリ */}
-                          <div className="col-span-2 table-cell flex items-center justify-center">
+                          <div className="col-span-2 table-cell">
                             {task.category === '事業' && task.business_type ? (
                               <span
                                 className="badge text-white font-semibold"
@@ -504,21 +504,23 @@ export default function Home() {
                           </div>
 
                           {/* ステータス + 優先度 */}
-                          <div className="col-span-2 table-cell flex items-center justify-center gap-2">
-                            <select
-                              value={task.status}
-                              onChange={(e) => handleUpdateField(task.id, 'status', e.target.value)}
-                              onClick={(e) => e.stopPropagation()}
-                              className={`select py-1.5 text-sm font-semibold cursor-pointer flex-1 ${
-                                task.status === '完了' ? 'status-done' :
-                                task.status === '進行中' ? 'status-progress' : 'status-todo'
-                              }`}
-                            >
-                              <option value="未着手">未着手</option>
-                              <option value="進行中">進行中</option>
-                              <option value="完了">完了</option>
-                            </select>
-                            <span className="text-xl flex-shrink-0">{priorityEmoji(task.priority)}</span>
+                          <div className="col-span-2 table-cell">
+                            <div className="flex items-center gap-2">
+                              <select
+                                value={task.status}
+                                onChange={(e) => handleUpdateField(task.id, 'status', e.target.value)}
+                                onClick={(e) => e.stopPropagation()}
+                                className={`select py-1.5 text-sm font-semibold cursor-pointer flex-1 ${
+                                  task.status === '完了' ? 'status-done' :
+                                  task.status === '進行中' ? 'status-progress' : 'status-todo'
+                                }`}
+                              >
+                                <option value="未着手">未着手</option>
+                                <option value="進行中">進行中</option>
+                                <option value="完了">完了</option>
+                              </select>
+                              <span className="text-xl flex-shrink-0">{priorityEmoji(task.priority)}</span>
+                            </div>
                           </div>
                         </div>
                       );
@@ -949,23 +951,25 @@ export default function Home() {
               </div>
 
               <div>
+                <label className="block text-sm font-semibold text-neutral-700 mb-2">
+                  補足説明
+                </label>
+                <textarea
+                  value={newTask.description}
+                  onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
+                  className="textarea"
+                  rows={3}
+                  placeholder="タスクの詳細や補足情報を入力（任意）"
+                />
+              </div>
+
+              <div>
                 <label className="block text-sm font-semibold text-neutral-700 mb-2">期限</label>
                 <input
                   type="date"
                   value={newTask.due_date || ''}
                   onChange={(e) => setNewTask({ ...newTask, due_date: e.target.value || undefined })}
                   className="input"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-neutral-700 mb-2">説明</label>
-                <textarea
-                  value={newTask.description}
-                  onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
-                  className="textarea"
-                  rows={3}
-                  placeholder="詳細な説明（任意）"
                 />
               </div>
 
